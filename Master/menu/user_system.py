@@ -1,60 +1,40 @@
 from getpass import getpass
-from controller import Controller
+from ..controller import Controller
 import hashlib
 import string
 import re
 
+from .menu import BaseMenu 
 
-class Menu():
+class Menu(BaseMenu):
 
-	base_menu = "Choose an option:\n\t0: Quit\n\t1: Login\n\t2: Register"
+	base_menu = "Choose an option:\n\t0: Quit\n\t1: Login\n\t2: Register\n\t3: Book Car"
 	password_help = "Password requirements:\n\t- 8+ characters\n\t- 1+ capital letters\n\t- 1+ special characters"
 
 	def __init__(self, controller, start=True):
-		self.on = start
-		self.cu = controller.cu
-		self.connection = controller
-		self.commands = [
-			self.quit,
-			self.login,
-			self.register,	
-		]
-		self.current_user = None
-		if start:
-			self.start()
+		super().__init__(controller, start=start, commands=[
+			self.quit, 
+			self.login, 
+			self.register, 
+			self.book_car])
+		
 
-	def start(self):
-		self.on = True
-		while self.on:
-			choice = self.menu_choice()
-			self.commands[choice]()
-
-	def menu_choice(self, f=True) -> int:
-		if self.current_user:
-			print("Welcome {0}!".format(self.current_user))
-		if f:
-			print(self.base_menu)
-		try:
-			i = int(input("Input choice (0-%d): " % (int(len(self.commands))-1)))
-			if len(self.commands) <= i or i < 0: 
-				raise ValueError
-			return i
-		except ValueError:
-			print("Invalid option")
-			return self.menu_choice(False)
-
-	def login(self):
-		uname = input("Username: ")
+	def login(self, username=None, password=None):
+		if username:
+			uname = username
+		else:
+			uname = input("Username: ")
 		if not self.connection.query_username(uname):
 			print("User not found!")
 			return
-		passhash = hashlib.sha1(getpass().encode("utf-8")).hexdigest()
+		if not password:
+			passhash = hashlib.sha1(getpass().encode("utf-8")).hexdigest()
+		else:
+			passhash = hashlib.sha1(password.encode("utf-8")).hexdigest()
 		if not self.connection.verify_hash(uname, passhash):
 			print("Incorrect details!")
-			return 
-		self.connection.update_lastlogin(uname)
-		self.current_user = uname
-
+		else:
+			self.current_user = uname
 
 	def register(self) -> bool:
 		print("Press Ctr+C to go back")
@@ -85,8 +65,8 @@ class Menu():
 						continue
 					passhash = self.hash_password(password).hexdigest()
 				if not email:
-					email = input("Email(leave blank for none): ")
-					if email!="" and not re.findall(".*@.*\..*", email):
+					email = input("Email: ")
+					if not re.findall(".*@.*\..*", email):
 						print("Invalid email")
 						email = ""
 						continue
@@ -101,8 +81,42 @@ class Menu():
 		except KeyboardInterrupt:
 			return
 
-	def quit(self):
-		self.on = False
+	def book_car(self, car_choice=None, date=None, time=None):
+		if not self.current_user:
+			return print("Log in to view and book cars")
+		if car_choice is None:
+			try:
+				car_choice = int(input("Car id: "))
+			except ValueError:
+				print("Invalid input!")
+				return self.book_car()
+			if not self.connection.get_car(car_choice):
+				return print("Car id not found!")
+		if date is None:
+			print("Please enter the date of the booking in the form:\n\n\tYYYY/MM/DD\n")
+			date = input("Enter date (YYYYY/MM/DD): ")
+			if not re.search("[0-9]{4}/[0-9]{2}/[0-9]{2}", date):
+				print("Invalid date format")
+				return self.book_car(car_choice=car_choice)
+			else:
+				date = "".join(date.split("/"))
+		if time is None:
+			print("Please enter time in the form:\n\n\tHH:MM:SS AM/PM\n")
+			time = input("Enter time (HH:MM:SS AM/PM): ")
+			if not re.search("[0-9]{2}:[0-9]{2}:[0-9]{2} [AP]M", time):
+				if not re.search("[0-9]{2}:[0-9]{2} [AP]M", time):
+					print("Invalid time format!")
+					return self.book_car(car_choice=car_choice, date=date)
+				time = time[:5] + ":00" + time[5:]
+		try:
+			duration = int(input("Enter duration in days: "))
+		except ValueError:
+			print("Invalid input!")
+			return self.book_car(car_choice=car_choice, date=date, time=time)
+		if duration <= 0:
+			print("Duration must be > 0")
+			return self.book_car(car_choice=car_choice, date=date, time=time)
+		self.connection.cal.add_event(self.current_user, car_choice, date+" "+time, duration)
 
 	def hash_password(self, password):
 		return hashlib.sha1(password.encode("utf-8"))
@@ -125,12 +139,12 @@ class Menu():
 			return tuple(name)
 		return name[:i], name[i+1:]
 
+
 def main():
 	menu = Menu()
 	while menu.on:
 		choice = menu.menu_choice()
 		menu.commands[choice]()
-
 
 
 if __name__ == "__main__":
