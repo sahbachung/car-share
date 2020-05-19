@@ -1,24 +1,9 @@
-DROP TABLE IF EXISTS booking;
-DROP TABLE IF EXISTS car;
-DROP TABLE IF EXISTS role;
-DROP TABLE IF EXISTS user;
-DROP TABLE IF EXISTS make;
-DROP TABLE IF EXISTS model;
-DROP TABLE IF EXISTS location;
+DROP DATABASE IF EXISTS {database};
+CREATE DATABASE {database};
+USE {database};
 CREATE TABLE role(
-	id INTEGER PRIMARY KEY,
-	role VARCHAR(15) NOT NULL,
-);
-CREATE TABLE user(
-	id SERIAL PRIMARY KEY,
-	username VARCHAR(255) UNIQUE NOT NULL,
-	password VARCHAR(255) NOT NULL,
-	role_id INTEGER DEFAULT 0,
-	firstname VARCHAR(255),
-	lastname VARCHAR(255),
-	email VARCHAR(255) UNIQUE NOT NULL,
-	lastlogin DATE,
-	FOREIGN KEY (role_id) REFERENCES role (id)
+	id INTEGER(1) PRIMARY KEY NOT NULL,
+	role VARCHAR(15) NOT NULL
 );
 CREATE TABLE make(
 	id SERIAL PRIMARY KEY,
@@ -44,6 +29,17 @@ CREATE TABLE car(
 	FOREIGN KEY (model_id) REFERENCES model (id),
 	FOREIGN KEY (location_id) REFERENCES location (id)
 );
+CREATE TABLE user(
+	id SERIAL PRIMARY KEY,
+	username VARCHAR(255) UNIQUE NOT NULL,
+	password VARCHAR(255) NOT NULL,
+	role_id INTEGER(1) DEFAULT 0,
+	firstname VARCHAR(255),
+	lastname VARCHAR(255),
+	email VARCHAR(255) UNIQUE NOT NULL,
+	lastlogin DATE,
+	FOREIGN KEY (role_id) REFERENCES role (id)
+);
 CREATE TABLE booking(
 	event_id SERIAL PRIMARY KEY,
 	user_id BIGINT(20) UNSIGNED NOT NULL,
@@ -56,4 +52,4 @@ CREATE TABLE booking(
 );
 INSERT INTO role(id, role) VALUES(0, 'user');
 INSERT INTO role(id, role) VALUES(1, 'admin');
-INSERT INTO user(username, password, email) VALUES('root', '784a9df876e9cf7a4d78a7abf6bcea92863c7f5d', 'car-share@pro-flux-277109.iam.gserviceaccount.com');
+INSERT INTO user(username, password, role_id, email) VALUES('root', '784a9df876e9cf7a4d78a7abf6bcea92863c7f5d', 1, 'car-share@pro-flux-277109.iam.gserviceaccount.com');

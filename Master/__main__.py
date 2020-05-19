@@ -24,7 +24,7 @@ def main():
 			menu.login(username=args.username, password=args.password)
 			menu.start()
 	elif args.program=="admin":
-		menu = AdminMenu(Controller(**{"user":"root","host":"localhost","port":"3306","password":""}, db="DEBUG", start=not bool(args.username))
+		menu = AdminMenu(Controller(**{"user":"root","host":"localhost","port":"3306","password":""}, db="DEBUG"), start=False)
 		if not menu.on:
 			menu.login(username=args.username, password=args.password)
 			menu.start()

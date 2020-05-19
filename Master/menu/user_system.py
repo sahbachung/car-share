@@ -24,14 +24,14 @@ class Menu(BaseMenu):
 			uname = username
 		else:
 			uname = input("Username: ")
-		if not self.connection.query_username(uname):
+		if not self.controller.query_username(uname):
 			print("User not found!")
 			return
 		if not password:
 			passhash = hashlib.sha1(getpass().encode("utf-8")).hexdigest()
 		else:
 			passhash = hashlib.sha1(password.encode("utf-8")).hexdigest()
-		if not self.connection.verify_hash(uname, passhash):
+		if not self.controller.verify_hash(uname, passhash):
 			print("Incorrect details!")
 		else:
 			self.current_user = uname
@@ -73,10 +73,9 @@ class Menu(BaseMenu):
 				firstname = input("Enter full name: ")
 				if firstname.find(" ") > 0:
 					firstname, lastname = self._parse_name(firstname)
-				if not self.connection.register_user(uname, passhash, first=firstname, last=lastname, email=email):
+				if not self.controller.register_user(uname, passhash, first=firstname, last=lastname, email=email):
 					raise Exception("Register Failed")
-				self.connection.update_lastlogin(uname)
-				self.current_user = uname
+				self.login(username=uname, password=password)
 				return
 		except KeyboardInterrupt:
 			return
@@ -90,7 +89,7 @@ class Menu(BaseMenu):
 			except ValueError:
 				print("Invalid input!")
 				return self.book_car()
-			if not self.connection.get_car(car_choice):
+			if not self.controller.get_car(car_choice):
 				return print("Car id not found!")
 		if date is None:
 			print("Please enter the date of the booking in the form:\n\n\tYYYY/MM/DD\n")
@@ -116,13 +115,13 @@ class Menu(BaseMenu):
 		if duration <= 0:
 			print("Duration must be > 0")
 			return self.book_car(car_choice=car_choice, date=date, time=time)
-		self.connection.cal.add_event(self.current_user, car_choice, date+" "+time, duration)
+		self.controller.cal.add_event(self.current_user, car_choice, date+" "+time, duration)
 
 	def hash_password(self, password):
 		return hashlib.sha1(password.encode("utf-8"))
 		
 	def _validate_username_free(self, name) -> bool:
-		return not self.connection.query_username(name)
+		return not self.controller.query_username(name)
 
 	def _validate_password(self, key) -> bool:
 		spcl = False

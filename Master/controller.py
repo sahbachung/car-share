@@ -43,8 +43,11 @@ class Controller(MySQLConnection):
 			self.use(db)
 
 
-	def init_database(self, schema_loc):
+	def init_database(self, schema_loc, db="DEBUG"):
 		for q in QueryBuilder.load_commands(schema_loc):
+			if "{database}" in q:
+				q = q.format(database=db)
+				_ += 1
 			self.cu.execute(q)
 
 	def query_username(self, username) -> bool:
@@ -213,8 +216,6 @@ class Calendar:
 			d2 = self._parse_date(
 				d.year + d.month + d.day + date[8:20])
 			return d1, d2
-
-
 
 
 class QueryBuilder:

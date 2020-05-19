@@ -5,7 +5,7 @@ class BaseMenu(ABC):
 
 	def __init__(self, controller, start=True, commands=None):
 		self.on = start
-		self.connection = controller
+		self.controller = controller
 		self.commands = commands
 		self.current_user = None
 		if self.on:
@@ -38,4 +38,4 @@ class BaseMenu(ABC):
 		self.on = False
 
 	@abstractmethod
-	def login(self): ...
+	def login(self, username=None, password=None): ...
