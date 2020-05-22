@@ -19,7 +19,7 @@ class CloudCursor:
         if os.path.exists(kwargs.get("token", "Master/cloud_token.pickle")):
             with open(kwargs.get("token", "Master/cloud_token.pickle"), "rb") as token:
                 self.creds = pickle.load(token)
-        if not self.creds or not self.creds.valid:
+        if not self.creds:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
