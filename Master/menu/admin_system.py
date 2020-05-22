@@ -1,35 +1,30 @@
 from getpass import getpass
 import hashlib
 
-from .menu import BaseMenu
+from .. import Server
+from base_type.menu import BaseMenu
 
 
-class Menu(BaseMenu):
+class AdminMenu(BaseMenu):
 
 	base_menu = "Choose an option:\n\t0: Quit\n\t1: Reinitialise DB"
-	warning = "WARNING!\nRUNNING THIS COMMAND WILL COMPLETLY DESTROY THE DATABASE!\nAre you sure you want to continue? (Y/N): "
+	warning = "WARNING!\nRUNNING THIS COMMAND WILL COMPLETELY DESTROY THE DATABASE!\nAre you sure you want to continue? " \
+		"(Y/N): "
 
 	def __init__(self, controller, start=True):
 		super().__init__(controller, start=start, commands=[
 			self.quit,
-			self.reinit])
+			self.reinit,
+			self.start_server
+		])
 
 	def menu_choice(self, f=True) -> int:
 		if not self.current_user:
 			raise CredError("Not logged in as Admin")
-		if f:
-			print(self.base_menu)
-		try:
-			i = int(input("Input choice (0-%d): " % (int(len(self.commands))-1)))
-			if len(self.commands) <= i or i < 0: 
-				raise ValueError
-			return i
-		except ValueError:
-			print("Invalid option")
-			return self.menu_choice(False)
+		return super().menu_choice()
 
 	def reinit(self):
-		if input(self.warning).upper()!="Y":
+		if input(self.warning).upper() != "Y":
 			return
 		self.controller.init_database("Master/schema.sql")
 
@@ -40,15 +35,20 @@ class Menu(BaseMenu):
 			print("User not found!")
 			return
 		if not password:
-			passhash = hashlib.sha1(getpass().encode("utf-8")).hexdigest()
+			password_hash = self.hash_password()
 		else:
-			passhash = hashlib.sha1(password.encode("utf-8")).hexdigest()
-		if not self.controller.verify_hash(username, passhash):
+			password_hash = self.hash_password(password)
+		if not self.controller.verify_hash(username, password_hash):
 			print("Incorrect details!")
 		elif not self.controller.get_user_details(username)[3] > 0:
 			raise CredError("Not an Admin account")
 		else:
 			self.current_user = username
+
+	def start_server(self):
+		with Server(self.controller) as server:
+			print("Press Ctrl+C to close the server")
+			server.listen()
 
 
 class CredError(Exception):

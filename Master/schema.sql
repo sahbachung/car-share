@@ -52,4 +52,9 @@ CREATE TABLE booking(
 );
 INSERT INTO role(id, role) VALUES(0, 'user');
 INSERT INTO role(id, role) VALUES(1, 'admin');
-INSERT INTO user(username, password, role_id, email) VALUES('root', '784a9df876e9cf7a4d78a7abf6bcea92863c7f5d', 1, 'car-share@pro-flux-277109.iam.gserviceaccount.com');
+INSERT INTO user(username, password, role_id, email)
+VALUES('root', '784a9df876e9cf7a4d78a7abf6bcea92863c7f5d', 1,
+       'car-share@pro-flux-277109.iam.gserviceaccount.com');
+INSERT INTO user(username, password, role_id, email)
+VALUES('sebastian', '23168421cde9478fe330aa22aedf93074c6997db', 0,
+        'bla.sahbachung@gmail.com');
