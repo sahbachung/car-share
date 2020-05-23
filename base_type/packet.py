@@ -1,30 +1,41 @@
-from enum import Enum
-import socket
 import datetime
+import socket
+from enum import Enum
+import json
 
 
 class Request(Enum):
-
     USER_LOGIN = 0
     USER_VERIFY = 1
     CAR_RETURN = 2
 
-    def get_payload(self, **kwargs) -> dict:
+    def send(self, client, **kwargs):
+        # TODO fix this error which causes this loop to stuff up
+        payload = self.get_payload(client.config["packet_header_size"], **client.config, **kwargs)
+        print(payload[:10])
+        client.conn.send(payload)
+        client.await_response()
+
+    def get_payload(self, header_length, **kwargs) -> bytes:
         msg = {
-            "request": str(self),
+            "request": self.value,
             "from": socket.gethostname(),
             "time": datetime.datetime.now().strftime(kwargs.get("date_format"))
         }
-        if self == Request.USER_LOGIN:
+        if self is Request.USER_LOGIN:
             """Asks the server if the credentials are valid and if the user has booked the car"""
-            assert all((kwargs.get(i) for i in ["user", "password"]))
+            assert all((kwargs.get(kwarg) for kwarg in ["user", "password"]))
             msg["user"] = kwargs.get("user")
             msg["password"] = kwargs.get("password")
-        elif self == Request.USER_VERIFY:...
-        #   TODO implement verifying that the user has permission to use the car
-        elif self == Request.CAR_RETURN:...
-        #   TODO implement telling the server that a car is being returned
-        return msg
+        elif self is Request.USER_VERIFY or self is Request.CAR_RETURN:
+            assert all((kwargs.get(kwarg) for kwarg in ["user", "car_id"]))
+            msg["user"] = kwargs.get("user")
+            msg["car_id"] = kwargs.get("car_id")
+        print(self)
+        payload = json.dumps(msg).encode(encoding="utf-8")
+        length = len(payload)
+        header = f"{length:<{header_length}}"
+        return bytes(header, encoding="utf-8") + payload
 
     def __str__(self) -> str:
         return f"< REQUEST: {self.value} - {self.name} >"
@@ -32,19 +43,54 @@ class Request(Enum):
 
 class Response(Enum):
 
-    SERVER_ERROR = 0.0
+    UNKNOWN_ERROR = 0
     LOGIN_ERROR = 0.1
     BOOKING_ERROR = 0.2
     LOGIN_SUCCESS = 1.1
     BOOKING_SUCCESS = 1.2
 
-    def get_payload(self, **kwargs) -> dict:
-        msg = {
-            "response": str(self),
+    def send(self, client_socket: socket.socket, header_length):
+        payload = self.get_payload(header_length)
+        client_socket.send(payload)
+
+    def get_payload(self, header_length, **kwargs) -> bytes:
+        msg = json.dumps({
+            "response": self.value,
             "from": socket.gethostname(),
             "time": datetime.datetime.now().strftime(kwargs.get("date_format"))
-        }
-        return msg
+        })
+        payload = json.dumps(msg).encode(encoding="utf-8")
+        return bytes(f"{len({payload}):<{header_length}}", encoding="utf-8") + payload
 
     def __str__(self) -> str:
         return f"< RESPONSE: {self.value} - {self.name} >"
+
+
+class BasePacketException(Exception):
+    def __init__(self, *args):
+        pass
+
+
+class EndOfPacketError(BasePacketException):
+    def __init__(self, packet, header_size):
+        self.packet = packet
+        self.header_size = header_size
+
+    def __str__(self):
+        return f"A packet didn't match its header length (header={self.header_size}, packet={self.packet})"
+
+
+class EmptyPacket(BasePacketException):
+    def __init__(self, host):
+        self.host = host
+
+    def __str__(self):
+        return f"Remote machine ({self.host}) sent an empty packet"
+
+
+class InvalidPacket(BasePacketException):
+    def __init__(self, packet:bytes):
+        self.packet = packet
+
+    def __str__(self):
+        return f"Could not load {self.packet}"

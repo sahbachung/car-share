@@ -1,77 +1,59 @@
 import argparse
 import hashlib
-import string
-from getpass import getpass
-import json
 from enum import Enum
+from getpass import getpass
 
 from Agent.app import Agent
 from Master.app import Master
 
+CONFIG_FILE = "car-share/config.json"
 
-CONFIG_FILE = "config.json"
-NO_PASSWORD = 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
+NO_PASSWORD = 'da39a3ee5e6b4b0d3255bfef95601890afd80709'  # sha1 hex digest of an empty string=''
 
 
 class Roles(Enum):
+    Agent = Agent
+    Master = Master
+    Default = None
 
-    Agent = "Agent"
-    Master = "Master"
-    NONE = "Default"
-
-    def get_prog(self, **kwargs):
+    def build(self, **kwargs):
         program = kwargs["program"]
-        username = kwargs.get("username")
-        password = kwargs.get("password")
         server_config = kwargs["server"]
         master_database_config = kwargs["master_database"]
         local_database_config = kwargs["local_database"]
-        if self == Roles.NONE:
-            raise ValueError
-        elif self == Roles.Agent:
-            return Agent(**kwargs)
-        elif self == Roles.Master:
-            return Master(**kwargs)
-        raise Exception
+        return self.build_role([program, server_config, master_database_config, local_database_config])
+
+    def build_role(self, args) -> Master or Agent:
+        if self is Roles.Default:
+            raise TypeError("Cannot build from role 'Default'")
+        args, kwargs = self.get_params(*args)
+        return self.value(*args, **kwargs)
+
+    def get_params(self, *args) -> tuple:
+        params = [[args[1]], {"program": args[0]}]
+        if self is Roles.Agent:
+            params[1]["local_database"] = args[3]
+        elif self is Roles.Master:
+            params[1]["master_database"] = args[2]
+        return tuple(params)
 
 
 def get_kwargs(**kwargs) -> dict:
-    if kwargs.get("username"):
-        kwargs["username"] = kwargs["username"][0]
     return kwargs
 
 
-def get_packet_header(packet_length, header_length=None) -> bytes:
-    if not header_length:
-        with open(CONFIG_FILE) as conf:
-            header_length = json.load(conf)["packet_header_length"]
-    return bytes(f"{packet_length:<{header_length}}", encoding="utf-8")
-
-
-def hash_password(password=None) -> str:
+def hash_password(password=None, prompt="Password: ") -> str:
     """returns the hexadecimal digest for a password, call hash_password() with no kwargs to get user input"""
     if not password:
-        password = getpass()
+        password = getpass(prompt=prompt)
     return hashlib.sha1(password.encode("utf-8")).hexdigest()
-
-
-def validate_password(key) -> bool:
-    special = False
-    capital = False
-    length = len(key) > 8
-    for char in key:
-        if char in string.ascii_uppercase:
-            capital = True
-        if char in """ !"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~""":
-            special = True
-    return special and capital and length
 
 
 def parse_name(name) -> tuple:
     i = name.find(" ")
     if i <= 0:
         return tuple(name)
-    return name[:i], name[i+1:]
+    return name[:i], name[i + 1:]
 
 
 def parse_args(desc=""):
@@ -82,5 +64,3 @@ def parse_args(desc=""):
     parser.add_argument("-p", dest="password", type=str, default=None)
     args = parser.parse_args()
     return args
-
-

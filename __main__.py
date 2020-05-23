@@ -1,17 +1,12 @@
-from Master.app import Master
-from Agent.app import Agent
-
 import argparse
-import os
-from sys import argv
-from enum import Enum
 import json
+import os
+from getpass import getpass
 
-from utils import hash_password, NO_PASSWORD, Roles, get_kwargs
+from utils import Roles
 
 
 def main():
-    # TODO !!!RE IMPLEMENT config.json PLEASE!!! #
     parser = argparse.ArgumentParser(description="Control center for the car-share app")
     program = parser.add_argument_group("program")
     program.add_argument(
@@ -20,11 +15,11 @@ def main():
         help="program to run")
     program.add_argument(
         "-u", "--username", dest="user",
-        type=str, nargs=1,
+        type=str,
         help="use provided username", required=False)
     program.add_argument(
         "-p", dest="use_password",
-        default=True, action="store_true",
+        default=False, action="store_true",
         help="use a password to login")
     program.add_argument(
         "-R", dest="role",
@@ -38,19 +33,14 @@ def main():
     args = parser.parse_args()
     with open(args.config) as conf:
         config = json.load(conf)
-    password = None
-    if args.program == "user":
-        args.user = input("Username: ")
-    if not args.user:
-        if args.use_password:
-            password = hash_password()
-        else:
-            password = NO_PASSWORD
+    if args.use_password:
+        password = getpass()
+    else:
+        password = None
     if args.role == "Default":
-        args.role = os.getenv("CAR_SHARE_ROLE")
-    kwargs = get_kwargs(program=args.program, username=args.user, password=password)
-    prog = Roles(args.role).get_prog(**kwargs, **config)
-    prog.run(**config)
+        args.role = os.getenv("CAR_SHARE_ROLE", "Default")
+    prog = Roles[args.role].build(program=args.program, username=args.user, password=password, **config)
+    prog.run(username=args.user, password=password)
 
 
 if __name__ == "__main__":

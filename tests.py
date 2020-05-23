@@ -1,10 +1,7 @@
+import json
 import unittest
 
-import json
-
 from Master.app import Master
-from Agent.app import Agent
-
 from utils import Roles, get_kwargs, NO_PASSWORD, CONFIG_FILE
 
 GLOBAL_CONFIG = None
@@ -16,11 +13,10 @@ except FileNotFoundError:
 
 
 class BaseMenuTest:
-
     global GLOBAL_CONFIG
 
     def get_prog(self, role, program, **kwargs):
-        return Roles(role).get_prog(program=program, **kwargs)
+        return Roles(role).build(program=program, **kwargs)
 
 
 class TestMenu(unittest.TestCase, BaseMenuTest):
@@ -34,5 +30,4 @@ class TestMenu(unittest.TestCase, BaseMenuTest):
 
 
 if __name__ == '__main__':
-
     unittest.main()

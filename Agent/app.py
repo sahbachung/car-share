@@ -1,35 +1,36 @@
+from Agent.controller import Controller
 from Agent.menu.admin_system import AdminMenu
 from Agent.menu.user_system import UserMenu
-from Agent.controller import Controller
 
 
 class Agent:
 
-    def __init__(self, **kwargs):
+    def __init__(self, server_config, **kwargs):
         self.program = kwargs["program"]
         self.current_user = kwargs.get("username")
         self.controller = Controller(**kwargs["local_database"])
-        self.config = kwargs
+        self.config = {
+            "server": server_config,
+            **kwargs
+        }
 
-    def run(self):
-        print(f"Agent {self.program}")
+    def run(self, **kwargs):
+        print(f"Initialized app as Agent\nRunning {self.program} program")
         if self.program == "user":
             self.user()
         if self.program == "admin":
             self.admin()
 
-    def update_config(self, **kwargs):
-        for key in kwargs:
-            self.config[key] = kwargs[key]
-
     def user(self):
-        menu = UserMenu(self.controller)
-        if not menu.on:
-            menu.login(username=self.current_user, password=self.config.get("password"))
-        menu.start()
+        menu = UserMenu(self.controller, self.config["server"])
+        if self.current_user:
+            menu.login(username=self.current_user, password=None)
+        else:
+            menu.login()
 
     def admin(self):
         menu = AdminMenu(self.controller)
-        if not menu.on:
-            menu.login(username=self.current_user, password=self.config.get("password"))
-        menu.start()
+        if self.current_user:
+            menu.login(username=self.current_user, password=None)
+        else:
+            menu.login()

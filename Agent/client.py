@@ -1,4 +1,3 @@
-
 # PACKET_HEADER_SIZE = 10
 #
 # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,10 +20,11 @@
 #                 print(full_msg[PACKET_HEADER_SIZE:])
 #                 new_msg = True
 
-import socket
 import json
+import socket
 
-from base_type.packet import Request
+
+from base_type.packet import Request, EndOfPacketError, Response
 
 
 def add_header(msg: bytes, h: int) -> bytes:
@@ -33,38 +33,41 @@ def add_header(msg: bytes, h: int) -> bytes:
 
 class Client:
 
-    def __init__(self, config=None):
+    def __init__(self, config):
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        with open(config) as conf:
-            self.config = json.load(conf)
+        self.config = config
+
+    def __enter__(self):
         self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.conn.close()
 
     def connect(self):
-        self.conn.connect((self.config["host"], self.config["port"]))
-        print("Connection to {host} has been established!".format(**self.config))
+        try:
+            self.conn.connect((self.config["host"], self.config["port"]))
+        except ConnectionRefusedError:
+            exit(print(Response(0)))
+        print(f"Connection to {self.config['host']} has been established!")
 
     def login(self, user, password):
-        print(f"logging in as {user}")
-        self.conn.send(self.get_payload(
-            Request.USER_LOGIN.get_payload(
-                user=user,
-                password=password,
-                **self.config))
-            )
+        print(f"Logging in as {user}")
+        response = Request.USER_LOGIN.send(self, user=user, password=password)
 
-    def get_payload(self, msg:dict) -> bytes:
+    def get_payload(self, msg: dict) -> bytes:
         payload = bytes(json.dumps(msg), encoding="utf-8")
         payload = add_header(payload, self.config['packet_header_size'])
         return payload
 
-    def await_response(self, server):
+    def await_response(self):
         payload = b""
         new = True
         buffer = self.config["packet_buffer_size"]
         header_size = self.config["packet_header_size"]
         length = 0
         while True:
-            data = server.recv(buffer)
+            data = self.conn.recv(buffer)
             if len(data) > 0:
                 if new:
                     length = int(data[:header_size])
@@ -75,6 +78,8 @@ class Client:
                     print("Response received")
                     payload = payload[header_size:]
                     return json.loads(payload, encoding="utf-8")
+            else:
+                raise EndOfPacketError(payload, length)
 
 
 def main():

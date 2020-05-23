@@ -1,25 +1,26 @@
 {
   "server": {
-    "host" : "192.168.8.2",
-    "port" : 2999,
+    "host": "192.168.8.2",
+    "port": 2999,
     "packet_header_size": 10,
-    "date_format" : "%A %d %B %Y(%H:%M:%S %f)",
-    "packet_buffer_size" : 16
+    "date_format": "%A %d %B %Y(%H:%M:%S %f)",
+    "packet_buffer_size": 32
   },
-  "master_database" : {
-    "host" : "34.87.224.173",
-    "proxy" : {
-      "host" : "127.0.0.1"
+  "master_database": {
+    "host": "localhost",
+    "proxy": {
+      "use": false,
+      "host": "127.0.0.1"
     },
-    "user" : "root",
-    "password" : "lenovoYoga11e",
-    "database" : "DEBUG"
+    "user": "root",
+    "database": "CLOUD",
+    "schema": "car-share/Master/schema.sql"
   },
-  "local_database" : {
-    "host" : "localhost",
-    "port" : 3306,
-    "user" : "root",
-    "password" : "",
-    "database" : "DEBUG2"
+  "local_database": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "database": "LOCAL",
+    "schema": "car-share/Agent/schema.sql"
   }
 }

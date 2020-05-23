@@ -1,10 +1,9 @@
-from mysql.connector import MySQLConnection
 from base_type.controller import LocalController
-from .facial_recognition import FaceDetectionEngine
+
+from Agent.facial_recognition import FaceDetectionEngine
 
 
 class Controller(LocalController):
-
     face_dir = "Agent/faces/"
 
     def __init__(self, **kwargs):
@@ -15,5 +14,3 @@ class Controller(LocalController):
         # TODO get a dir to a saved face
         face = ""
         return self.face_dir + face
-
-

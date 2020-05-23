@@ -1,35 +1,29 @@
+from Master.controller import Controller
 from Master.menu.admin_system import AdminMenu
 from Master.menu.user_system import UserMenu
-from Master.controller import Controller
 
 
 class Master:
 
-    def __init__(self, **kwargs):
+    def __init__(self, server_config: dict, **kwargs):
+        self.config = {
+            "server": server_config,
+            "master_database": kwargs["master_database"]
+        }
         self.program = kwargs["program"]
-        self.current_user = kwargs.get("username")
-        self.controller = Controller(**kwargs["master_database"])
-        self.config = kwargs
+        self.controller = Controller(**self.config["master_database"])
 
-    def run(self):
-        print(f"Master {self.program}\nkwargs={self.config}")
+    def run(self, username=None, password=None):
+        print(f"Initialized app as Master\nRunning {self.program} program")
         if self.program == "user":
             self.user()
         if self.program == "admin":
-            self.admin()
+            self.admin(username=username, password=password)
 
-    def update_config(self, **kwargs):
-        for key in kwargs:
-            self.config[key] = kwargs[key]
+    def user(self, **kwargs):
+        menu = UserMenu(self.controller)
 
-    def user(self):
-        menu = UserMenu(self.controller, start=bool(self.config.get("username")))
-        if not menu.on:
-            menu.login(username=self.current_user, password=self.config.get("password"))
-        menu.start()
-
-    def admin(self):
-        menu = AdminMenu(self.controller, start=False)
-        if not menu.on:
-            menu.login(username=self.current_user, password=self.config.get("password"))
+    def admin(self, username=None, password=None):
+        menu = AdminMenu(self.controller, self.config["server"])
+        menu.login(username=username, password=password)
         menu.start()

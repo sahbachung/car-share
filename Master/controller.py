@@ -1,18 +1,19 @@
-from googleapiclient.discovery import build
+import os.path
+import pickle
+import re
+from datetime import datetime, timedelta
+
 from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
+
+from mysql.connector import connect, ProgrammingError, InterfaceError
 
 from base_type.controller import BaseController
 from base_type.query import BaseQuery
 
-import pickle
-import os.path
-import re
-from datetime import datetime, timedelta
-
 
 class Query(BaseQuery):
-
     SELECT = "SELECT {0} FROM {1}"
     USER_COND = " WHERE username LIKE '{0}'"
     INSERT = "INSERT INTO {0} VALUES ({1})"
@@ -128,47 +129,83 @@ class Query(BaseQuery):
         return q + v.format(**kwargs)
 
     @staticmethod
+    def get_bookings(username=None):
+        q = "SELECT "
+
+    @staticmethod
     def finish_booking(event_id):
         return "UPDATE booking SET returned=CURRENT_TIMESTAMP();"
 
 
 class Controller(BaseController):
+    CURRENT_DATABASE = None
 
     def __init__(self, **kwargs):
-        self.cu = None
+        super().__init__()
+        self.config = kwargs
+        self._conn = connect(**Controller.get_login_kwargs(**kwargs))
+        self._conn.autocommit = True
+        self.cu = self._conn.cursor()
+        if kwargs["database"]:
+            self.use(kwargs["database"])
         self.credfile = kwargs.get("credentials", "Master/credentials.json")
 
     def __enter__(self):
+        self._conn.autocommit = False
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cu.execute("COMMIT;")
+        self._conn.autocommit = True
         pass
+
+    @staticmethod
+    def get_login_kwargs(**allkwargs) -> dict:
+        kwargs = {
+            "host": "localhost",
+            "user": "root",
+            "port": 3306,
+            "password": "",
+            "database": None
+        }
+        for kwarg in kwargs:
+            kwargs[kwarg] = allkwargs[kwarg] if allkwargs.get(kwarg) else kwargs[kwarg]
+        return kwargs
 
     def get_service(self):
         return
 
     def use(self, db):
         try:
-            self.cu.execute(f"USE %s" % db)
-        except:
-            self.cu.execute(f"CREATE DATABASE %s" % db)
-        else:
-            return
-        finally:
-            self.cu.execute(f"USE %s" % db)
+            self.cu.execute(f"USE {db}")
+        except ProgrammingError as ex:
+            if "Y" == str.upper(input(f"ERROR: {ex}\nINITIALISE {db}? (Y/N): ")):
+                self.init_database(self.config["schema"], db=db)
+            else:
+                exit(-1)
 
     def init_database(self, schema_loc, db="DEBUG", qb=Query):
         super().init_database(schema_loc, db=db, qb=qb)
 
+    def query(self, q, n=1) -> tuple:
+        self.cu.execute(q)
+        result_set = self.cu.fetchall()
+        if not result_set:
+            return None,
+        if n < 1:
+            return tuple(result_set)
+        elif n == 1:
+            return result_set[0]
+        elif n > 1:
+            return tuple(result_set[:n])
+
     # DATABASE INTERFACE
 
     def query_username(self, username) -> bool:
-        self.cu.execute(Query.find_user(username))
-        return bool(self.cu.fetchall())
+        return bool(self.query(Query.find_user(username))[0])
 
     def verify_hash(self, username, key_hash) -> bool:
-        self.cu.execute(Query.retrieve_hash(username))
-        q = self.cu.fetchall()[0]
+        q = self.query(Query.retrieve_hash(username))
         return bool(q) and q[0] == key_hash
 
     def login(self, username, password) -> bool:
@@ -176,9 +213,9 @@ class Controller(BaseController):
             return False
         else:
             self.cu.execute(Query.update_lastlogin(username))
+            return True
 
     def register_user(self, username, password, first="", last="", email="") -> bool:
-        print("register " + username)
         if not first:
             first = "NULL"
         if not last:
@@ -218,49 +255,46 @@ class Controller(BaseController):
         return self.cu.fetchall()
 
     def search_cars(self, display_fields=None, **kwargs):
-        self.cu.execute(Query.search_car(display_fields, **kwargs))
-        return self.cu.fetchall()
+        return self.query(Query.search_car(display_fields, **kwargs), n=-1)
 
-    def get_history(self, username) -> list:
-        self.cu.execute(Query.get_history(username))
-        return self.cu.fetchall()
+    def get_history(self, username) -> tuple:
+        return self.query(Query.get_history(username))
 
     def get_user_details(self, username) -> tuple:
-        self.cu.execute(Query.get_user_info(username))
-        return self.cu.fetchall()[0]
+        return self.query(Query.get_user_info(username))
 
     def get_next_event_id(self) -> int:
-        self.cu.execute("SELECT MAX(event_id) FROM booking;")
-        eid = self.cu.fetchall()
+        eid = self.query("SELECT MAX(event_id) FROM booking;")
         if not eid:
             return 0
         else:
-            return int(eid[0][0]) + 1
+            return int(eid[0]) + 1
 
     def get_email(self, user) -> str:
-        self.cu.execute("SELECT email FROM user WHERE username LIKE '{0}'".format(user))
-        r = self.cu.fetchall()
+
+        r = self.query("SELECT email FROM user WHERE username LIKE '{0}'".format(user))
         if not r:
             raise ValueNotFound
         else:
-            return r[0][0]
+            return r[0]
 
     def get_car(self, car_id) -> bool:
-        self.cu.execute(Query.get_car(car_id))
-        return bool(self.cu.fetchall())
+        return bool(self.query(Query.get_car(car_id)))
 
     def car_is_free(self, car_id) -> bool:
         if not self.get_car(car_id):
             return False
-        self.cu.execute(Query.check_car_free(car_id))
-        return not bool(self.cu.fetchall())
+        return not bool(self.query(Query.check_car_free(car_id)))
+
+    def get_user_bookings(self, user=None):
+        pass
 
 
 class Calendar:
     SCOPES = ['https://www.googleapis.com/auth/calendar']
     creds = None
-    pkl = "Master/token.pickle"
-    credentials = "Master/credentials.json"
+    pkl = "car-share/Master/token.pickle"
+    credentials = "car-share/Master/credentials.json"
 
     def __init__(self, controller: Controller):
         self.controller = controller

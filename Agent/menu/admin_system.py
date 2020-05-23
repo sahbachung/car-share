@@ -2,7 +2,6 @@ from base_type.menu import BaseMenu
 
 
 class AdminMenu(BaseMenu):
-
     base_menu = "Choose an option:\n\t0: Quit\n\t1: Reinitialise DB"
     warning = "WARNING!\nRUNNING THIS COMMAND WILL COMPLETELY DESTROY THE DATABASE!\nAre you sure you want to continue? " \
               "(Y/N): "
@@ -17,9 +16,9 @@ class AdminMenu(BaseMenu):
         if not username:
             username = input("Username: ")
         if not password:
-            password = self.hash_password()
+            password = self.controller.hash_function()
 
     def reinit(self):
         if input(self.warning).upper() != "Y":
             return
-        self.controller.init_database("Agent/schema.sql")
+        self.controller.init_database("car-share/Agent/schema.sql")

@@ -1,24 +1,49 @@
+from abc import ABC, abstractmethod
+
 from mysql.connector import MySQLConnection
 from mysql.connector.errors import ProgrammingError
+from getpass import getpass
+import hashlib
 
 from base_type.query import BaseQuery
-
-from abc import ABC, abstractmethod
 
 
 class BaseController(ABC):
 
-    @abstractmethod
-    def __enter__(self): ...
+    cu = None
+
+    def hash_function(self, password=None, prompt="Password: ") -> str:
+        """returns the hexadecimal digest for a password, call hash_password() with no kwargs to get user input"""
+        if not password:
+            password = getpass(prompt=prompt)
+        return hashlib.sha1(password.encode("utf-8")).hexdigest()
 
     @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb): ...
+    def __init__(self, *args, **kwargs):
+        pass
 
     @abstractmethod
-    def use(self, db): ...
+    def __enter__(self):
+        ...
 
     @abstractmethod
-    def init_database(self, schema_loc, db="DEBUG", qb=BaseQuery): ...
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        ...
+
+    @abstractmethod
+    def use(self, db):
+        ...
+
+    def set_cursor(self, cu):
+        self.cu = cu
+
+    def init_database(self, schema_loc, db="DEBUG", qb=BaseQuery):
+        for q in qb.load_commands(schema_loc):
+            if "{database}" in q:
+                q = q.format(database=db)
+            if db == "DEBUG":
+                print(q[:q.find(" ")] + "...")
+            self.cu.execute(q)
 
 
 class LocalController(MySQLConnection, BaseController):
@@ -67,9 +92,3 @@ class LocalController(MySQLConnection, BaseController):
         except ProgrammingError:
             self.cu.execute(f"CREATE DATABASE %s" % db)
             self.use(db)
-
-    def init_database(self, schema_loc, db="DEBUG", qb=BaseQuery):
-        for q in qb.load_commands(schema_loc):
-            if "{database}" in q:
-                q = q.format(database=db)
-            self.cu.execute(q)

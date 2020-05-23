@@ -1,5 +1,6 @@
-import cv2
 import os
+
+import cv2
 
 
 def get_camera(device_id):
@@ -16,6 +17,12 @@ class FaceDetectionEngine:
         self.controller = controller
         self.camera = get_camera(dev)
         self.face_detector = cv2.CascadeClassifier("Agent/haarcascade_frontalface_default.xml")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
 
     def detect_face(self):
         # TODO implement me

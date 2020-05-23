@@ -1,19 +1,21 @@
-from getpass import getpass
 import re
 import string
+from getpass import getpass
 
 from base_type.menu import BaseMenu
 
 
 def validate_password(key) -> bool:
+    print(key)
     special = False
     capital = False
-    length = len(key) > 8
+    length = len(key) >= 8
     for char in key:
         if char in string.ascii_uppercase:
             capital = True
         if char in """ !"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~""":
             special = True
+    print(special, capital, length)
     return special and capital and length
 
 
@@ -21,13 +23,11 @@ def parse_name(name) -> tuple:
     i = name.find(" ")
     if i <= 0:
         return tuple(name)
-    return name[:i], name[i+1:]
+    return name[:i], name[i + 1:]
 
 
 class UserMenu(BaseMenu):
-
     base_menu = "Choose an option:\n\t0: Quit\n\t1: Login\n\t2: Register\n\t3: Book Car"
-    password_help = "Password requirements:\n\t- 8+ characters\n\t- 1+ capital letters\n\t- 1+ special characters"
 
     def __init__(self, controller, start=True):
         super().__init__(controller, start=start, commands=[
@@ -42,10 +42,7 @@ class UserMenu(BaseMenu):
         if not self.controller.query_username(username):
             print("User not found!")
             return
-        if not password:
-            password_hash = self.hash_password()
-        else:
-            password_hash = self.hash_password(password)
+        password_hash = self.controller.hash_function(password)
         if not self.controller.verify_hash(username, password_hash):
             print("Incorrect details!")
         else:
@@ -55,6 +52,7 @@ class UserMenu(BaseMenu):
         print("Press Ctr+C to go back")
         username = ""
         password = ""
+        password_hash = ""
         email = ""
         try:
             while True:
@@ -70,15 +68,16 @@ class UserMenu(BaseMenu):
                         continue
                 if not password:
                     password = getpass()
-                    if password != getpass("Confirm: "):
-                        print("Passwords don't match")
-                        password = ""
-                        continue
                     if not validate_password(password):
                         print(self.password_help)
                         password = ""
                         continue
-                password_hash = hash_password(password)
+                if password and not password_hash:
+                    if getpass("Confirm: ") != password:
+                        print("Passwords don't match")
+                        password = ""
+                        continue
+                    password_hash = self.controller.hash_function(password)
                 if not email:
                     email = input("Email: ")
                     if not re.findall(".*@.*\..*", email):
@@ -90,9 +89,9 @@ class UserMenu(BaseMenu):
                     first_name, last_name = parse_name(first_name)
                 else:
                     last_name = ""
-                if not self.controller.register_user(username, password_hash, first=first_name, last=last_name, email=email):
+                if not self.controller.register_user(username, password_hash, first=first_name, last=last_name,
+                                                     email=email):
                     raise Exception("Register Failed")
-                self.login(username=username, password=password)
                 return True
         except KeyboardInterrupt:
             return False
@@ -132,7 +131,7 @@ class UserMenu(BaseMenu):
         if duration <= 0:
             print("Duration must be > 0")
             return self.book_car(car_choice=car_choice, date=date, time=time)
-        self.controller.cal.add_event(self.current_user, car_choice, date+" "+time, duration)
+        self.controller.cal.add_event(self.current_user, car_choice, date + " " + time, duration)
 
     def _validate_username_free(self, name) -> bool:
         return not self.controller.query_username(name)
