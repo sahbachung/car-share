@@ -9,7 +9,6 @@ class Server:
     def __init__(self, controller: Controller, config):
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.config = config
-        self.config["host"] = socket.gethostbyname(socket.gethostname())
         self.controller = controller
         self.conn.bind((self.config["host"], self.config["port"]))
 

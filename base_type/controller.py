@@ -61,8 +61,7 @@ class LocalController(MySQLConnection, BaseController):
     def __init__(self, **kwargs):
         assert "user" in kwargs
         self._config = kwargs
-        if self._config.pop("client_flags"):
-            # self._config["client_flags"] = ClientFlag.SSL
+        if self._config.pop("client_flags", False):
             pass
         self.db = kwargs.pop("database", "DEBUG")
         self.schema = kwargs.pop("schema")

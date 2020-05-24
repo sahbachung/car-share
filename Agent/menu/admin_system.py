@@ -7,7 +7,7 @@ class AdminMenu(BaseMenu):
               "(Y/N): "
 
     def __init__(self, controller):
-        super().__init__(controller, commands=[
+        super().__init__(self, controller, commands=[
             self.quit,
             self.reinit
         ])
@@ -21,4 +21,4 @@ class AdminMenu(BaseMenu):
     def reinit(self):
         if input(self.warning).upper() != "Y":
             return
-        self.controller.init_database("car-share/Agent/schema.sql")
+        self.controller.init_database(schema_loc=self.controller._config["schema"])
