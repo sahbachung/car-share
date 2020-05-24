@@ -18,6 +18,10 @@ class BaseController(ABC):
             password = getpass(prompt=prompt)
         return hashlib.sha1(password.encode("utf-8")).hexdigest()
 
+    @classmethod
+    def update_hash_function(cls, func):
+        setattr(cls, "hash_function", func)
+
     @abstractmethod
     def __init__(self, *args, **kwargs):
         pass
@@ -49,30 +53,8 @@ class BaseController(ABC):
 class LocalController(MySQLConnection, BaseController):
 
     def __init__(self, **kwargs):
-        self.db = kwargs.get("database")
-        if not self.db:
-            self.db = "DEBUG"
-        k = {
-            "user": "root",
-            "host": "localhost",
-            "port": "3306",
-            "password": ""}
-        for key in k:
-            if key in kwargs:
-                continue
-            kwargs[key] = k[key]
-        if kwargs["port"]:
-            super().__init__(
-                host=kwargs.get("host"),
-                port=kwargs.get("port"),
-                user=kwargs.get("user"),
-                password=kwargs.get("password"))
-        else:
-            super().__init__(
-                host=kwargs.get("host"),
-                user=kwargs.get("user"),
-                password=kwargs.get("password"))
-        self.autocommit = True
+        self.db = kwargs.pop("database", "DEBUG")
+        super().__init__(**kwargs)
         self.cu = self.cursor()
         self.use(self.db)
 

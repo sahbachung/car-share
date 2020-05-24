@@ -1,6 +1,5 @@
 **/__pycache__/
 *.exe
 .idea/
-*.pem
 *.oauth.json
 *.pickle

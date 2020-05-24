@@ -10,11 +10,10 @@ class Request(Enum):
     CAR_RETURN = 2
 
     def send(self, client, **kwargs):
-        # TODO fix this error which causes this loop to stuff up
         payload = self.get_payload(client.config["packet_header_size"], **client.config, **kwargs)
-        print(payload[:10])
         client.conn.send(payload)
-        client.await_response()
+        response = client.await_response()
+        return Response(response["response"])
 
     def get_payload(self, header_length, **kwargs) -> bytes:
         msg = {
@@ -31,7 +30,6 @@ class Request(Enum):
             assert all((kwargs.get(kwarg) for kwarg in ["user", "car_id"]))
             msg["user"] = kwargs.get("user")
             msg["car_id"] = kwargs.get("car_id")
-        print(self)
         payload = json.dumps(msg).encode(encoding="utf-8")
         length = len(payload)
         header = f"{length:<{header_length}}"
@@ -54,13 +52,15 @@ class Response(Enum):
         client_socket.send(payload)
 
     def get_payload(self, header_length, **kwargs) -> bytes:
-        msg = json.dumps({
+        msg = {
             "response": self.value,
             "from": socket.gethostname(),
             "time": datetime.datetime.now().strftime(kwargs.get("date_format"))
-        })
+        }
         payload = json.dumps(msg).encode(encoding="utf-8")
-        return bytes(f"{len({payload}):<{header_length}}", encoding="utf-8") + payload
+        length = len(payload)
+        header = f"{length:<{header_length}}"
+        return bytes(header, encoding="utf-8") + payload
 
     def __str__(self) -> str:
         return f"< RESPONSE: {self.value} - {self.name} >"

@@ -5,7 +5,7 @@ from Agent.menu.user_system import UserMenu
 
 class Agent:
 
-    def __init__(self, server_config, **kwargs):
+    def __init__(self, server_config: dict, **kwargs):
         self.program = kwargs["program"]
         self.current_user = kwargs.get("username")
         self.controller = Controller(**kwargs["local_database"])

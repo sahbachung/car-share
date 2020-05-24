@@ -9,7 +9,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 from mysql.connector import connect, ProgrammingError, InterfaceError
 
-from base_type.controller import BaseController
+from base_type.controller import BaseController, LocalController
 from base_type.query import BaseQuery
 
 
@@ -137,15 +137,13 @@ class Query(BaseQuery):
         return "UPDATE booking SET returned=CURRENT_TIMESTAMP();"
 
 
-class Controller(BaseController):
+class Controller(LocalController):
     CURRENT_DATABASE = None
 
     def __init__(self, **kwargs):
         super().__init__()
         self.config = kwargs
-        self._conn = connect(**Controller.get_login_kwargs(**kwargs))
-        self._conn.autocommit = True
-        self.cu = self._conn.cursor()
+        print(self.config)
         if kwargs["database"]:
             self.use(kwargs["database"])
         self.credfile = kwargs.get("credentials", "Master/credentials.json")
@@ -158,22 +156,6 @@ class Controller(BaseController):
         self.cu.execute("COMMIT;")
         self._conn.autocommit = True
         pass
-
-    @staticmethod
-    def get_login_kwargs(**allkwargs) -> dict:
-        kwargs = {
-            "host": "localhost",
-            "user": "root",
-            "port": 3306,
-            "password": "",
-            "database": None
-        }
-        for kwarg in kwargs:
-            kwargs[kwarg] = allkwargs[kwarg] if allkwargs.get(kwarg) else kwargs[kwarg]
-        return kwargs
-
-    def get_service(self):
-        return
 
     def use(self, db):
         try:

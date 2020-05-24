@@ -3,7 +3,8 @@ import json
 import os
 from getpass import getpass
 
-from utils import Roles
+
+import build
 
 
 def main():
@@ -30,6 +31,17 @@ def main():
         "-C", dest="config",
         type=str, default="car-share/config.json",
         help="configuration file for the app; default='car-share/config.json'")
+    program.add_argument(
+        "-s", "--use-ssl",
+        dest="ssl", default=False,
+        action="store_true",
+        help="provide the mysql server ssl credentials")
+    program.add_argument(
+        "-a", "--use-service-account",
+        dest="sa", default=False,
+        action="store_true",
+        help="use service"
+    )
     args = parser.parse_args()
     with open(args.config) as conf:
         config = json.load(conf)
@@ -37,9 +49,11 @@ def main():
         password = getpass()
     else:
         password = None
+    print(args.role)
     if args.role == "Default":
         args.role = os.getenv("CAR_SHARE_ROLE", "Default")
-    prog = Roles[args.role].build(program=args.program, username=args.user, password=password, **config)
+    print(config)
+    prog = build.build(args.role, program=args.program, **config)
     prog.run(username=args.user, password=password)
 
 

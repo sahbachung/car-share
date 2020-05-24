@@ -24,7 +24,7 @@ import json
 import socket
 
 
-from base_type.packet import Request, EndOfPacketError, Response
+from base_type.packet import Request, EndOfPacketError, Response, InvalidPacket
 
 
 def add_header(msg: bytes, h: int) -> bytes:
@@ -51,9 +51,11 @@ class Client:
             exit(print(Response(0)))
         print(f"Connection to {self.config['host']} has been established!")
 
-    def login(self, user, password):
+    def login(self, user, password) -> Response:
         print(f"Logging in as {user}")
         response = Request.USER_LOGIN.send(self, user=user, password=password)
+        print(f"Response received {response}")
+        return response
 
     def get_payload(self, msg: dict) -> bytes:
         payload = bytes(json.dumps(msg), encoding="utf-8")
@@ -62,24 +64,30 @@ class Client:
 
     def await_response(self):
         payload = b""
+        data = b" "
         new = True
         buffer = self.config["packet_buffer_size"]
         header_size = self.config["packet_header_size"]
+        msg = {}
         length = 0
-        while True:
+        while data:
             data = self.conn.recv(buffer)
             if len(data) > 0:
                 if new:
                     length = int(data[:header_size])
                     new = False
-                    print(f"New Response packet\nLength: {length}")
-                payload += data.decode("utf-8")
-                if len(payload) - header_size >= length:
-                    print("Response received")
-                    payload = payload[header_size:]
-                    return json.loads(payload, encoding="utf-8")
-            else:
-                raise EndOfPacketError(payload, length)
+                    payload = data
+                    continue
+                payload += data
+                if len(payload) - header_size == length:
+                    try:
+                        msg = json.loads(payload[header_size:], encoding="utf-8")
+                    except json.decoder.JSONDecodeError:
+                        raise InvalidPacket(payload)
+                    finally:
+                        new = not bool(payload) and bool(msg)
+            if msg:
+                return msg
 
 
 def main():

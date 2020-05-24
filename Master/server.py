@@ -25,6 +25,7 @@ class Server:
     def listen(self, backlog=5):
         print(f"Listening at {self.config['host']}:{self.config['port']}")
         self.conn.listen(backlog)
+        client_socket = None
         while True:
             print("Entering listen loop")
             try:
@@ -32,52 +33,50 @@ class Server:
                 print(f"Connection from {address} has been established!")
                 try:
                     req = self.await_request(client_socket, address)
-                    print(Request(req["request"]))
+                    print(f"Packet received {Request(req['request'])}")
                     resp = self.process_request(req)
                     self.send_response(client_socket, resp)
                 except EndOfPacketError or EmptyPacket as err:
                     print(err)
-                    raise err
             except KeyboardInterrupt:
                 print("Shutting down server")
                 break
             except BasePacketException as ex:
                 print(f"ERROR: {ex}")
+                client_socket.close()
 
     def await_request(self, client, address) -> dict:
         # TODO fix this error which causes this loop to stuff up
         payload = b""
-        data = b"_"
+        data = b" "
         new = True
         buffer = self.config["packet_buffer_size"]
         header_size = self.config["packet_header_size"]
+        msg = {}
         length = 0
-        print("entering request loop")
         while data:
             data = client.recv(buffer)
-            print(data)
             if len(data) > 0:
                 if new:
                     length = int(data[:header_size])
-                    print(data[:header_size])
                     print(f"New Request packet from {address}  -  Length: {length}")
                     new = False
                     payload = data
                     continue
                 payload += data
                 if len(payload) - header_size == length:
-                    print(f"Request received: {payload}")
-                    break
+                    try:
+                        msg = json.loads(payload[header_size:], encoding="utf-8")
+                    except json.decoder.JSONDecodeError as e:
+                        print(f"ERROR: {e}")
+                        raise InvalidPacket(payload)
+                    finally:
+                        new = not bool(payload) and bool(msg)
+            if msg:
+                return msg
             elif new:
                 print("EMPTY")
                 raise EmptyPacket(address)
-            else:
-                print("END OF PACKET")
-                raise EndOfPacketError(payload, length)
-            try:
-                return json.loads(payload[header_size:], encoding="utf-8")
-            except json.decoder.JSONDecodeError:
-                raise InvalidPacket(payload)
 
     def process_request(self, packet) -> Response:
         request = Request(packet["request"])
@@ -94,6 +93,6 @@ class Server:
         return response
 
     def send_response(self, client, response: Response):
-        payload = response.get_payload(**self.config)
+        payload = response.get_payload(self.config["packet_header_size"], **self.config)
         client.send(payload)
 
