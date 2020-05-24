@@ -5,9 +5,9 @@ from Master.menu.user_system import UserMenu
 
 class Master:
 
-    def __init__(self, server_config: dict, **kwargs):
+    def __init__(self, **kwargs):
         self.config = {
-            "server": server_config,
+            "server": kwargs["server"],
             "master_database": kwargs["master_database"]
         }
         self.program = kwargs["program"]

@@ -5,32 +5,26 @@ from Agent.menu.user_system import UserMenu
 
 class Agent:
 
-    def __init__(self, server_config: dict, **kwargs):
+    def __init__(self, **kwargs):
+        print(kwargs)
         self.program = kwargs["program"]
-        self.current_user = kwargs.get("username")
-        self.controller = Controller(**kwargs["local_database"])
-        self.config = {
-            "server": server_config,
-            **kwargs
-        }
+        self.controller = Controller(current_user=kwargs.get("user"), **kwargs["local_database"])
+        self.config = kwargs
+        self.menu = None
 
     def run(self, **kwargs):
         print(f"Initialized app as Agent\nRunning {self.program} program")
+        self.controller.current_user = kwargs.get("username")
         if self.program == "user":
-            self.user()
+            self.menu = self.user()
         if self.program == "admin":
-            self.admin()
+            self.menu = self.admin()
+        if self.controller.current_user:
+            self.controller.current_user = self.menu.login(username=self.controller.current_user, password=None)
+        self.menu.start()
 
     def user(self):
-        menu = UserMenu(self.controller, self.config["server"])
-        if self.current_user:
-            menu.login(username=self.current_user, password=None)
-        else:
-            menu.login()
+        return UserMenu(self.controller, self.config["server"])
 
     def admin(self):
-        menu = AdminMenu(self.controller)
-        if self.current_user:
-            menu.login(username=self.current_user, password=None)
-        else:
-            menu.login()
+        return AdminMenu(self.controller, self.config["server"])

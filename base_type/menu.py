@@ -37,6 +37,8 @@ class BaseMenu(ABC):
             if len(self.commands) <= i or i < 0:
                 print("Invalid option")
                 return self.menu_choice(False)
+        if not i:
+            exit(i)
         return i
 
     def quit(self):

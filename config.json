@@ -1,6 +1,6 @@
 {
   "server": {
-    "host": "192.168.8.2",
+    "host": "192.168.8.121",
     "port": 2999,
     "packet_header_size": 10,
     "date_format": "%A %d %B %Y(%H:%M:%S %f)",

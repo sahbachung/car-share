@@ -8,10 +8,9 @@ def load_role(role) -> type:
         return Role
 
 
-def build(role, **kwargs):
-    server_config = kwargs["server"]
-    return build_role(load_role(role), server_config, **kwargs)
+def build(role: str, **kwargs):
+    return build_role(load_role(role), **kwargs)
 
 
-def build_role(role:type, server_config, **kwargs):
-    return role(server_config, **kwargs)
+def build_role(role:type, **kwargs):
+    return role(**kwargs)

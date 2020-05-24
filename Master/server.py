@@ -26,7 +26,6 @@ class Server:
         self.conn.listen(backlog)
         client_socket = None
         while True:
-            print("Entering listen loop")
             try:
                 client_socket, address = self.conn.accept()
                 print(f"Connection from {address} has been established!")
@@ -37,9 +36,6 @@ class Server:
                     self.send_response(client_socket, resp)
                 except EndOfPacketError or EmptyPacket as err:
                     print(err)
-            except KeyboardInterrupt:
-                print("Shutting down server")
-                break
             except BasePacketException as ex:
                 print(f"ERROR: {ex}")
                 client_socket.close()

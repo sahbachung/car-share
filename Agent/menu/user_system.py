@@ -1,7 +1,7 @@
 from getpass import getpass
 
 from base_type.menu import BaseMenu
-from base_type.packet import Request
+from base_type.packet import Request, Response
 
 from Agent.client import Client
 
@@ -17,7 +17,7 @@ class UserMenu(BaseMenu):
         self.base_menu += "\n\t1: Unlock Car\n\t2: Return car"
         self.config = server_config
 
-    def login(self, username=None, password=None):
+    def login(self, username=None, password=None, force=False):
         if username:
             password = self.controller.hash_function(getpass())
         else:
@@ -36,7 +36,11 @@ class UserMenu(BaseMenu):
             elif i == 1:
                 username, password = self.in_login()
         with Client(self.config) as client:
-            client.login(user=username, password=password)
+            response = client.login(user=username, password=password)
+        if response is Response.LOGIN_ERROR:
+            print("Incorrect username or password")
+        elif response is Response.LOGIN_SUCCESS:
+            self.controller.current_user = username
 
     def in_login(self) -> tuple:
         username = ""
@@ -50,8 +54,9 @@ class UserMenu(BaseMenu):
         return username, password
 
     def verify_user(self) -> bool:
+        car_id = input("THIS VEHICLE'S ID: ")
         with Client(self.config) as client:
-            Request.USER_VERIFY.send(client, user=self.current_user)
+            Request.USER_VERIFY.send(client, user=self.current_user, car_id=car_id)
         return False
 
     def unlock_car(self):  # TODO implement me

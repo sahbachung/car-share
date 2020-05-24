@@ -10,17 +10,18 @@ class Request(Enum):
     CAR_RETURN = 2
 
     def send(self, client, **kwargs):
-        payload = self.get_payload(client.config["packet_header_size"], **client.config, **kwargs)
+        payload = self.get_payload(client.config, **kwargs)
         client.conn.send(payload)
         response = client.await_response()
         return Response(response["response"])
 
-    def get_payload(self, header_length, **kwargs) -> bytes:
+    def get_payload(self, config, **kwargs) -> bytes:
         msg = {
             "request": self.value,
             "from": socket.gethostname(),
-            "time": datetime.datetime.now().strftime(kwargs.get("date_format"))
+            "time": datetime.datetime.now().strftime(config.get("date_format"))
         }
+        header_length = config["packet_header_size"]
         if self is Request.USER_LOGIN:
             """Asks the server if the credentials are valid and if the user has booked the car"""
             assert all((kwargs.get(kwarg) for kwarg in ["user", "password"]))
