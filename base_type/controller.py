@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from mysql.connector import MySQLConnection
+from mysql.connector import MySQLConnection, ClientFlag
 from mysql.connector.errors import ProgrammingError
 from getpass import getpass
 import hashlib
@@ -52,9 +52,22 @@ class BaseController(ABC):
 
 class LocalController(MySQLConnection, BaseController):
 
+    # def __init__(self, **kwargs):
+    #     super().__init__(**self._config)
+    #     self._config = kwargs
+    #     if self._config.pop("client_flags"):
+    #         self._config["client_flags"] = ClientFlag.SSL
+
     def __init__(self, **kwargs):
+        assert "user" in kwargs
+        self._config = kwargs
+        if self._config.pop("client_flags"):
+            # self._config["client_flags"] = ClientFlag.SSL
+            pass
         self.db = kwargs.pop("database", "DEBUG")
+        self.schema = kwargs.pop("schema")
         super().__init__(**kwargs)
+        self.autocommit = True
         self.cu = self.cursor()
         self.use(self.db)
 
@@ -64,7 +77,7 @@ class LocalController(MySQLConnection, BaseController):
         return self
 
     def __exit__(self, type, value, tb):
-        if type(tb) == KeyboardInterrupt:
+        if type(tb) != KeyboardInterrupt:
             self.cu.execute(f"COMMIT;")
         self.autocommit = True
 

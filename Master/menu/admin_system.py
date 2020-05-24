@@ -33,7 +33,7 @@ class AdminMenu(BaseMenu):
         self.controller.init_database("car-share/Master/schema.sql")
 
     def login(self, username=None, password=None):
-        if self.controller.get_user_details(username)[1] != username:
+        if not self.controller.get_user_details(username):
             exit("USER NOT FOUND")
         elif not username:
             username = input("Input username: ")
@@ -41,7 +41,10 @@ class AdminMenu(BaseMenu):
                 username = None
             else:
                 self.current_user = username
-        password_hash = self.controller.hash_function(password=password)
+        if password is None:
+            password_hash = self.controller.hash_function()
+        else:
+            password_hash = self.controller.hash_function(password=password)
         if not self.controller.verify_hash(username, password_hash) or self.controller.get_user_details(username)[1] != username:
             print("Incorrect details!")
             self.login(username=username, password=getpass())

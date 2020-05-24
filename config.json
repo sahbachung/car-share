@@ -11,9 +11,10 @@
     "user": "car-share",
     "database": "CLOUD",
     "schema": "car-share/Master/schema.sql",
-    "ssl_ca": "Master/server-ca.pem",
-    "ssl_cert": "Master/client-cert.pem",
-    "ssl_key": "Master/client-key.pem"
+    "ssl_ca": "car-share/Master/server-ca.pem",
+    "ssl_cert": "car-share/Master/client-cert.pem",
+    "ssl_key": "car-share/Master/client-key.pem",
+    "client_flags": true
   },
   "local_database": {
     "host": "localhost",

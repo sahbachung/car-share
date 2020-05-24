@@ -6,7 +6,6 @@ from base_type.menu import BaseMenu
 
 
 def validate_password(key) -> bool:
-    print(key)
     special = False
     capital = False
     length = len(key) >= 8
@@ -15,7 +14,6 @@ def validate_password(key) -> bool:
             capital = True
         if char in """ !"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~""":
             special = True
-    print(special, capital, length)
     return special and capital and length
 
 

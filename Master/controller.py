@@ -7,9 +7,10 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 
-from mysql.connector import connect, ProgrammingError, InterfaceError
+from mysql.connector import ProgrammingError
+from mysql.connector.constants import ClientFlag
 
-from base_type.controller import BaseController, LocalController
+from base_type.controller import LocalController
 from base_type.query import BaseQuery
 
 
@@ -140,14 +141,6 @@ class Query(BaseQuery):
 class Controller(LocalController):
     CURRENT_DATABASE = None
 
-    def __init__(self, **kwargs):
-        super().__init__()
-        self.config = kwargs
-        print(self.config)
-        if kwargs["database"]:
-            self.use(kwargs["database"])
-        self.credfile = kwargs.get("credentials", "Master/credentials.json")
-
     def __enter__(self):
         self._conn.autocommit = False
         return self
@@ -162,7 +155,7 @@ class Controller(LocalController):
             self.cu.execute(f"USE {db}")
         except ProgrammingError as ex:
             if "Y" == str.upper(input(f"ERROR: {ex}\nINITIALISE {db}? (Y/N): ")):
-                self.init_database(self.config["schema"], db=db)
+                self.init_database(self.schema, db=db)
             else:
                 exit(-1)
 
