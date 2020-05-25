@@ -118,7 +118,7 @@ class FaceDetectionEngine:
 
     def compare_face(self, t=30) -> str:
         # TODO implement me
-        with open(self.encodings) as f:
+        with open(self.encodings, "rb") as f:
             data = pickle.loads(f.read())
         vs = get_camera(self.dev, VideoStream).start()
         start = time.time()

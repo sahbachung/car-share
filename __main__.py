@@ -38,7 +38,6 @@ def main():
         password = getpass()
     else:
         password = None
-    print(args.role)
     if args.role == "Default":
         args.role = os.getenv("CAR_SHARE_ROLE", "Default")
     prog = build.build(args.role, program=args.program, **config)
