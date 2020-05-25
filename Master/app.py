@@ -2,10 +2,13 @@ from Master.controller import Controller
 from Master.menu.admin_system import AdminMenu
 from Master.menu.user_system import UserMenu
 
+from base_type.app import App
 
-class Master:
+
+class Master(App):
 
     def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.config = {
             "server": kwargs["server"],
             "master_database": kwargs["master_database"]
