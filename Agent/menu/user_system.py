@@ -6,6 +6,50 @@ from base_type.packet import Request, Response
 from Agent.client import Client
 
 
+class LoginMenu:
+
+    def __init__(self, controller):
+        self.controller = controller
+
+    def login(self, e:bool = False) -> (str, str):
+        commands = [
+            exit,
+            self.login_with_creds
+        ]
+        if e:
+            commands.append(self.login_with_face)
+        print(f"Choose an option [0-{len(commands)-1}]")
+        print("\t0: Quit")
+        print("\t1: Login with username and password")
+        if e:
+            print("\t2: Login with face")
+        i = -1
+        while i < 0 or i >= len(commands):
+            try:
+                i = int(input(f"Enter option: "))
+            except ValueError:
+                continue
+        return commands[i]()
+
+    def login_with_creds(self) -> (str, str):
+        username = ""
+        password = ""
+        while not username:
+            username = input("Username: ")
+            if not username:
+                continue
+            key = getpass()
+            password = self.controller.hash_function(password=key)
+        return username, password
+
+    def login_with_face(self) -> (str, str):
+        username, password = self.controller.login_with_face()
+        if not username:
+            print("Failed to login with faces, logging with credentials")
+            username, password = self.login_with_creds()
+        return username, password
+
+
 class UserMenu(BaseMenu):
 
     def __init__(self, controller, server_config):
@@ -13,6 +57,7 @@ class UserMenu(BaseMenu):
             self.quit,
             self.unlock_car,
             self.return_car,
+            self.add_face
         ], start=False)
         self.base_menu += "\n\t1: Unlock Car\n\t2: Return car"
         self.config = server_config
@@ -21,25 +66,7 @@ class UserMenu(BaseMenu):
         if username:
             password = self.controller.hash_function(getpass())
         else:
-            print("How will you verify?")
-            print("\t0: Quit")
-            print("\t1: Enter credentials")
-            print("\t2: Detect Face")
-            i = -1
-            while 0 > i or i > 2:
-                try:
-                    i = int(input("Input user verification method [0-2]: "))
-                except ValueError:
-                    continue
-            if not i:
-                exit(i)
-            elif i == 1:
-                username, password = self.in_login()
-            elif i == 2:
-                username, password = self.controller.login_with_face()
-                if not username:
-                    print("Failed to login with faces, logging with credentials")
-                    username, password = self.in_login()
+            username, password = LoginMenu(self.controller).login()
         with Client(self.config) as client:
             response = client.login(user=username, password=password)
         if response:
@@ -94,3 +121,8 @@ class UserMenu(BaseMenu):
 
     def local_user(self, user) -> bool:
         return bool(self.controller.find_user_dir())
+
+    def start(self):
+        super().start()
+
+

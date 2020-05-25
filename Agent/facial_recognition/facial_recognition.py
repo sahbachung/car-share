@@ -62,8 +62,6 @@ class FaceDetectionEngine:
 
     def __init__(self, controller, encodings="car-share/Agent/facial_recognition/encodings.pickle", dev=0):
         # TODO implement FaceDetectionEngine
-        if not os.path.exists(encodings):
-            open(encodings, "xb").close()
         self.dev = dev
         self.controller = controller
         self.classifier = cv2.CascadeClassifier()
@@ -79,6 +77,8 @@ class FaceDetectionEngine:
 
     def detect_face(self, frame) -> list:
         # TODO implement me
+        if not os.path.exists(self.encodings):
+            raise EmptyConfiguration
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         return self.classifier.detectMultiScale(gray, 1.3, 5)
 
@@ -182,3 +182,6 @@ class FaceDetectionEngine:
                     self.dev = 0
                 else:
                     print("Enter a number")
+
+class EmptyConfiguration(Exception):
+    pass
