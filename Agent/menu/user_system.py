@@ -10,6 +10,7 @@ class LoginMenu:
 
     def __init__(self, controller):
         self.controller = controller
+        self.user, self.password = "", ""
 
     def login(self, e:bool = False) -> (str, str):
         commands = [
@@ -40,6 +41,8 @@ class LoginMenu:
                 continue
             key = getpass()
             password = self.controller.hash_function(password=key)
+        self.user = username
+        self.password = password
         return username, password
 
     def login_with_face(self) -> (str, str):
@@ -47,12 +50,15 @@ class LoginMenu:
         if not username:
             print("Failed to login with faces, logging with credentials")
             username, password = self.login_with_creds()
+        self.user = username
+        self.password = password
         return username, password
 
 
 class UserMenu(BaseMenu):
 
     def __init__(self, controller, server_config):
+        self.current_login = None
         super().__init__(controller, commands=[
             self.quit,
             self.unlock_car,
@@ -66,7 +72,10 @@ class UserMenu(BaseMenu):
         if username:
             password = self.controller.hash_function(getpass())
         else:
-            username, password = LoginMenu(self.controller).login()
+
+            self.current_login = LoginMenu(self.controller)
+            username, password = self.current_login.login()
+
         with Client(self.config) as client:
             response = client.login(user=username, password=password)
         if response:
@@ -74,17 +83,6 @@ class UserMenu(BaseMenu):
         else:
             print("Incorrect username or password")
             return ""
-
-    def in_login(self) -> tuple:
-        username = ""
-        password = ""
-        while not username:
-            username = input("Username: ")
-            if not username:
-                continue
-            key = getpass()
-            password = self.controller.hash_function(password=key)
-        return username, password
 
     def verify_user(self) -> bool:
         car_id = int(input("THIS VEHICLE'S ID: "))
@@ -110,12 +108,10 @@ class UserMenu(BaseMenu):
         else:
             print(response)
 
-    def add_face(self, username, password):
-        self.controller.gather_face(username, password)
+    def add_face(self):
+        self.controller.gather_face(self.current_login.user, self.current_login.password)
 
     def quit(self):
-        if self.commands[-1].__name__ == "<lambda>":
-            self.commands.pop()
         super().quit()
 
     def local_user(self, user) -> bool:
