@@ -59,7 +59,7 @@ class UserMenu(BaseMenu):
             self.return_car,
             self.add_face
         ], start=False)
-        self.base_menu += "\n\t1: Unlock Car\n\t2: Return car"
+        self.base_menu += "\n\t1: Unlock Car\n\t2: Return car\n\t3: Scan face"
         self.config = server_config
 
     def login(self, username=None, password=None, force=False) -> str:
@@ -70,12 +70,10 @@ class UserMenu(BaseMenu):
         with Client(self.config) as client:
             response = client.login(user=username, password=password)
         if response:
-            if not self.local_user(username):
-                self.commands.append(lambda: self.add_face(username, password))
+            return username
         else:
             print("Incorrect username or password")
             return ""
-        return username
 
     def in_login(self) -> tuple:
         username = ""

@@ -9,7 +9,7 @@ class BaseMenu(ABC):
     def __init__(self, controller, start=True, commands=None):
         self.on = start
         self.controller = controller
-        self.commands = commands
+        self.commands = commands if commands else []
         self.current_user = None
         if self.on:
             self.start()
@@ -29,7 +29,7 @@ class BaseMenu(ABC):
         if f:
             print(self.base_menu)
         try:
-            i = int(input(f"Input choice [0-{(int(len(self.commands)) - 1)}]: "))
+            i = int(input(f"Input choice [0-{(len(self.commands)-1)}]: "))
         except ValueError:
             print(f"Please enter an number [0-{len(self.commands)-1}]: ")
             return self.menu_choice(False)
