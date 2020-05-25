@@ -21,5 +21,6 @@ class Agent(App):
             self.menu = UserMenu(self.controller, self.config["server"])
         if self.program == "admin":
             self.menu = AdminMenu(self.controller, self.config["server"])
-        self.controller.current_user = self.menu.login(username=self.controller.current_user, password=None)
+        while not self.controller.current_user:
+            self.controller.current_user = self.menu.login(username=self.controller.current_user, password=None)
         self.menu.start()
