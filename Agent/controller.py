@@ -9,7 +9,7 @@ class Controller(LocalController):
     def __init__(self, current_user, **kwargs):
         # TODO implement Agent database controller
         cv2args = kwargs.pop("cv2")
-        s = kwargs.pop("schema", "car-share/Agent/schema.sql")
+        s = kwargs.get("schema", "car-share/Agent/schema.sql")
         super().__init__(**kwargs)
         self.schema = s
         kwargs = cv2args
