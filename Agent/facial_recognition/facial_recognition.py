@@ -53,8 +53,8 @@ def get_camera(device_id, Type: type = Camera):
     if device_id is None:
         raise ValueError
     c = Type(device_id)
-    c.set(3, 640)
-    c.set(4, 480)
+    # c.set(3, 640)
+    # c.set(4, 480)
     return c
 
 
