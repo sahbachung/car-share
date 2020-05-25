@@ -28,7 +28,7 @@ class AdminMenu(BaseMenu):
     def reinit(self):
         if input(self.warning).upper() != "Y":
             return
-        self.controller.init_database(schema_loc=self.controller.schema)
+        self.controller.init_database(self.controller.schema)
 
     def start(self):
         if not self.controller.current_user:
