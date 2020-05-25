@@ -62,6 +62,8 @@ class FaceDetectionEngine:
 
     def __init__(self, controller, encodings="car-share/Agent/facial_recognition/encodings.pickle", dev=0):
         # TODO implement FaceDetectionEngine
+        if not os.path.exists(encodings):
+            open(encodings, "xb").close()
         self.dev = dev
         self.controller = controller
         self.classifier = cv2.CascadeClassifier()
