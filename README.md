@@ -3,23 +3,24 @@
 car-share is a Python library developed for _Programming the Internet of Things (PIoT)_.
 
 ## Requirements
-If the role of the host machine is set to Agent, the latest version of [OpenCV](opencv.org) must be installed
+- If the role of the host machine is set to Agent, the latest version of [OpenCV](opencv.org) and [dlib](http://dlib.net/) must be installed
 You must also have a working webcam device connected to the host machine
-If the role is set to Master, the [Cloud SQL Proxy](https://cloud.google.com/sql/docs/mysql/sql-proxy) and 
+- If the role is set to Master, the  and 
 [Google Calendar API](https://developers.google.com/calendar/overview) must both be installed
 
 ## Installation
 
-```bash
 
-```
+- `$ pip3 install -r car-share/requirements/[Agent, Master].txt`
+- Alternatively, use `$ sh ./car-share/requirements/install.sh`
+if the environment variable `$CAR_SHARE_ROLE` has been set
 
 ## Usage
 
 To run the app, open the root directory as a python command:
-```bash
-cd ~/parent/dir/
-python3 car-share [program] [-h] [-u USER] [-p] [-R Default] Master] Agent] [-C CONFIG]
+```
+$ cd ~/parent/dir/
+$ python3 car-share [program] [-h] [-u USER] [-p] [-R Default] Master] Agent] [-C CONFIG]
 ```
 Parameters
 <table>
@@ -65,8 +66,9 @@ Parameters
 
 ## Examples
 
-```bash
+```
 $ python3 car-share user
 $ python3 car-share admin -R Master
 $ python3 car-share user -u root -p -R Master
+$ python3 car-share user -R Agent -C path/my_config.json
 ```

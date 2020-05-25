@@ -11,6 +11,7 @@ from base_type.query import BaseQuery
 class BaseController(ABC):
 
     cu = None
+    db = None
 
     def hash_function(self, password=None, prompt="Password: ") -> str:
         """returns the hexadecimal digest for a password, call hash_password() with no kwargs to get user input"""

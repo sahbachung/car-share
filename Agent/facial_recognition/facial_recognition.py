@@ -39,11 +39,22 @@ def get_camera(device_id):
 
 class FaceDetectionEngine:
 
-    def __init__(self, controller, dev=0):
+    def __init__(self, controller):
         # TODO implement FaceDetectionEngine
+        dev = None
+        while not dev:
+            try:
+                dev = int(input("Camera device id (leave blank for default for default)[0]: "))
+            except ValueError as err:
+                if str(err)[-2:]=="''":
+                    dev = 0
+                else:
+                    print("Enter a number")
         self.controller = controller
         self.camera = get_camera(dev)
-        self.face_detector = cv2.CascadeClassifier("Agent/haarcascade_frontalface_default.xml")
+        self.classifier = cv2.CascadeClassifier()
+        if not self.classifier.load("car-share/Agent/haarcascade_frontalface_default.xml"):
+            raise RuntimeError("Couldn't load 'car-share/Agent/haarcascade_frontalface_default.xml")
 
     def __enter__(self):
         return self
@@ -51,17 +62,33 @@ class FaceDetectionEngine:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def detect_face(self):
+    def detect_face(self, frame) -> list:
         # TODO implement me
-        pass
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        return self.classifier.detectMultiScale(gray, 1.3, 5)
+
+    def get_faces(self) -> tuple:
+        faces = []
+        frame = None
+        while not faces:
+            ret = False
+            while not ret:
+                ret, frame = self.camera.read()
+            faces = self.detect_face(frame)
+        return faces, frame
 
     def encode_face(self, path):
         for i, image_path in enumerate(os.walk(path)):
-            image = cv2.imread(image_path)
+            if image_path[-4:] in [".jpg", "jpeg"]:
+                image = cv2.imread(image_path)
+            else:
+                continue
+            name = os.path.basename(image_path[-1])
+            rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
-
-    def compare_face(self) -> bool:
+    def compare_face(self, user) -> bool:
         # TODO implement me
+        faces = self.get_faces()[0]
         return bool(self)
 
     def save_photos(self, folder, count=10):
@@ -72,11 +99,7 @@ class FaceDetectionEngine:
             key = input("Press q to quit or ENTER to continue: ")
             if key == "q":
                 break
-            ret, frame = self.camera.read()
-            if not ret:
-                break
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = self.face_detector.detectMultiScale(gray, 1.3, 5)
+            faces, frame = self.get_faces()
             if len(faces) == 0:
                 print("No face detected, please try again")
                 continue

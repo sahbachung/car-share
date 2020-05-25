@@ -37,10 +37,10 @@ class UserMenu(BaseMenu):
                 username, password = self.in_login()
         with Client(self.config) as client:
             response = client.login(user=username, password=password)
-        if response is Response.LOGIN_ERROR:
-            print("Incorrect username or password")
-        elif response is Response.LOGIN_SUCCESS:
+        if response:
             self.controller.current_user = username
+        else:
+            print("Incorrect username or password")
 
     def in_login(self) -> tuple:
         username = ""
@@ -54,14 +54,25 @@ class UserMenu(BaseMenu):
         return username, password
 
     def verify_user(self) -> bool:
-        car_id = input("THIS VEHICLE'S ID: ")
+        car_id = int(input("THIS VEHICLE'S ID: "))
         with Client(self.config) as client:
-            Request.USER_VERIFY.send(client, user=self.current_user, car_id=car_id)
-        return False
+            response = Request.USER_VERIFY.send(client, user=self.current_user, car_id=car_id)
+        return bool(response)
 
-    def unlock_car(self):  # TODO implement me
+    def unlock_car(self):
         if not self.verify_user():
-            print("UNAUTHORISED USER")
+            print("---UNAUTHORISED USER---")
+        else:
+            print("---SUCCESSFULLY UNLOCKED CAR---")
 
-    def return_car(self):  # TODO implement me
-        ...
+    def return_car(self):
+        car_id = int(input("THIS VEHICLE'S ID: "))
+        with Client(self.config) as client:
+            response = Request.CAR_RETURN.send(client, user=self.current_user, car_id=car_id)
+        if response:
+            print("---CAR SUCCESSFULLY RETURNED---")
+            self.quit()
+        elif response is Response.RETURN_ERROR:
+            print("---COULD NOT RETURN CAR")
+        else:
+            print(response)

@@ -8,7 +8,6 @@ from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 
 from mysql.connector import ProgrammingError
-from mysql.connector.constants import ClientFlag
 
 from base_type.controller import LocalController
 from base_type.query import BaseQuery
@@ -131,7 +130,12 @@ class Query(BaseQuery):
 
     @staticmethod
     def get_bookings(username=None):
-        q = "SELECT "
+        return f"SELECT u.username, b.* FROM booking b, user u WHERE b.user_id=u.id AND u.username LIKE '{username}';"
+
+    @staticmethod
+    def get_active_booking(username):
+        return f"select event_id, car_id from booking b, user u WHERE b.user_id=u.id AND u.username LIKE '{username}' " \
+               f"AND b.returned is NULL;"
 
     @staticmethod
     def finish_booking(event_id):
@@ -146,9 +150,9 @@ class Controller(LocalController):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cu.execute("COMMIT;")
-        self._conn.autocommit = True
-        pass
+        if exc_type is not ProgrammingError:
+            self.cu.execute("COMMIT;")
+            self._conn.autocommit = True
 
     def use(self, db):
         try:
@@ -169,7 +173,7 @@ class Controller(LocalController):
             return None,
         if n < 1:
             return tuple(result_set)
-        elif n == 1:
+        elif n == 1 or n is True:
             return result_set[0]
         elif n > 1:
             return tuple(result_set[:n])
@@ -211,6 +215,7 @@ class Controller(LocalController):
             event_id=event_id,
             user_id=self.get_user_details(username)[0],
             car_id=car_id, booked=date)
+        self.cu.execute(q)
 
     @staticmethod
     def parse_date(d) -> (int, int, int, int, int, int):
@@ -246,8 +251,7 @@ class Controller(LocalController):
             return int(eid[0]) + 1
 
     def get_email(self, user) -> str:
-
-        r = self.query("SELECT email FROM user WHERE username LIKE '{0}'".format(user))
+        r = self.query(f"SELECT email FROM user WHERE username LIKE '{user}'")
         if not r:
             raise ValueNotFound
         else:
@@ -261,8 +265,20 @@ class Controller(LocalController):
             return False
         return not bool(self.query(Query.check_car_free(car_id)))
 
-    def get_user_bookings(self, user=None):
-        pass
+    def get_user_bookings(self, user) -> tuple:
+        return self.query(Query.get_bookings(username=user))
+
+    def verify_user_booking(self, user, car_id) -> bool:
+        active: tuple = self.query(Query.get_active_booking(user))
+        if not active or int(active[1]) != car_id:
+            return False
+        return True
+
+    def return_car(self, car_id) -> bool:
+        if self.car_is_free(car_id):
+            self.cu.execute(f"UPDATE booking SET returned=CURRENT_TIMESTAMP WHERE car_id={car_id}")
+            return True
+        return False
 
 
 class Calendar:

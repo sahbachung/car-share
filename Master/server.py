@@ -4,8 +4,6 @@ from Master.controller import Controller
 
 class Server:
 
-    PARSE_BYTES = 3
-
     def __init__(self, controller: Controller, config):
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.config = config
@@ -41,7 +39,6 @@ class Server:
                 client_socket.close()
 
     def await_request(self, client, address) -> dict:
-        # TODO fix this error which causes this loop to stuff up
         payload = b""
         data = b" "
         new = True
@@ -70,21 +67,32 @@ class Server:
             if msg:
                 return msg
             elif new:
-                print("EMPTY")
                 raise EmptyPacket(address)
 
     def process_request(self, packet) -> Response:
-        request = Request(packet["request"])
         response = None
+        try:
+            request = Request(packet["request"])
+        except ValueError:
+            request = Request(0)
         if request is Request.USER_LOGIN:
             if self.controller.login(packet["user"], packet["password"]):
                 response = Response(1.1)
             else:
                 response = Response(0.1)
-        elif request is Request.USER_VERIFY or request is Request.CAR_RETURN:
-            pass
-        if not response:
-            response = Response(0)
+        elif request is Request.USER_VERIFY:
+            if self.controller.verify_user_booking(packet["user"], packet["car_id"]):
+                response = Response(1.2)
+            else:
+                response = Response(0.2)
+        elif request is Request.CAR_RETURN:
+            if self.controller.verify_user_booking(packet["user"], packet["car_id"]):
+                if self.controller.return_car(packet["car_id"]):
+                    response = Response(1.3)
+                else:
+                    response = Response(0.3)
+            else:
+                response = Response(0)
         return response
 
     def send_response(self, client, response: Response):

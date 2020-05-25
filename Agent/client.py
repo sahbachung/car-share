@@ -57,6 +57,16 @@ class Client:
         print(f"Response received {response}")
         return response
 
+    def verify_user(self, user, car_id):
+        print(f"Requesting access for car: {car_id}")
+        response = Request.USER_VERIFY.send(self, user=user, car_id=car_id)
+        print(f"Response received {response}")
+        return response
+
+    def return_car(self, user, car_id):
+        print(f"Requesting to return car: {car_id}")
+        response = Request.CAR_RETURN.send(self, )
+
     def get_payload(self, msg: dict) -> bytes:
         payload = bytes(json.dumps(msg), encoding="utf-8")
         payload = add_header(payload, self.config['packet_header_size'])

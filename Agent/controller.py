@@ -30,4 +30,3 @@ class Controller(LocalController):
                 rmtree(path)
             else:
                 exit()
-        self.engine.detect_face()

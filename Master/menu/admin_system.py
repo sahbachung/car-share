@@ -12,25 +12,27 @@ class AdminMenu(BaseMenu):
     2: Start Server
     3: Register new user
     4: Book Car for user"""
-    warning = "WARNING!\nRUNNING THIS COMMAND WILL COMPLETELY DESTROY THE DATABASE!\n" \
-              "Are you sure you want to continue? (Y/N): "
+
+    warning = """WARNING!
+RUNNING THIS COMMAND WILL COMPLETELY DESTROY THE DATABASE!
+Are you sure you want to continue? (Y/N): """
 
     def __init__(self, controller, server_config):
         super().__init__(controller, commands=[
             self.quit,
-            self.reinit,
+            self.re_init,
             self.start_server,
             self.register,
             self.show_bookings
         ], start=False)
         self._server_config = server_config
 
-    def reinit(self):
+    def re_init(self):
         if not self.current_user:
             self.login()
         if input(self.warning).upper() != "Y":
             return
-        self.controller.init_database("car-share/Master/schema.sql")
+        self.controller.init_database("car-share/Master/schema.sql", db=self.controller.db)
 
     def login(self, username=None, password=None):
         if not self.controller.get_user_details(username):
@@ -59,12 +61,15 @@ class AdminMenu(BaseMenu):
             self.login(username=username, password=getpass())
 
     def start_server(self):
-        with Server(self.controller, self._server_config) as server:
-            print("Press Ctrl+C to close the server")
-            try:
-                server.listen()
-            except KeyboardInterrupt:
-                return
+        try:
+            with Server(self.controller, self._server_config) as server:
+                print("Press Ctrl+C to close the server")
+                try:
+                    server.listen()
+                except KeyboardInterrupt:
+                    return
+        except OSError as ex:
+            print(f"Cannot start server: {ex}")
 
     def register(self):
         UserMenu.register(self)
