@@ -3,8 +3,6 @@ from shutil import rmtree
 
 from base_type.controller import LocalController
 
-from Agent.facial_recognition import FaceDetectionEngine
-
 
 class Controller(LocalController):
 
@@ -13,7 +11,12 @@ class Controller(LocalController):
         super().__init__(**kwargs)
         self.face_dir = kwargs.get("faces")
         self.current_user = current_user
-        self.engine = FaceDetectionEngine(self, encodings=kwargs.get("encodings"), dev=kwargs.get("device_id", 0))
+        try:
+            from Agent.facial_recognition import FaceDetectionEngine
+            self.engine = FaceDetectionEngine(self, encodings=kwargs.get("encodings"), dev=kwargs.get("device_id", 0))
+        except ImportError:
+            print("Face detect compatibility not detected")
+            self.engine = None
 
     def get_dir(self, username) -> str:
         # TODO get a dir to a saved face
@@ -30,7 +33,8 @@ class Controller(LocalController):
                 rmtree(path)
             else:
                 exit()
-        self.engine.save_photos(path)
+        if self.engine.save_photos(path):
+            self.cu.execute(f"INSERT INTO user(username, password, dir) VALUES ('{username}', '{password}', '{path}')")
 
     def login_with_face(self) -> tuple:
         username = self.engine.compare_face()

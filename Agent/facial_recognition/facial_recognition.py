@@ -150,7 +150,7 @@ class FaceDetectionEngine:
                 return max(counts, key=counts.get)
             return ""
 
-    def save_photos(self, folder, count=10):
+    def save_photos(self, folder, count=10) -> bool:
         img_counter = 0
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -168,6 +168,7 @@ class FaceDetectionEngine:
                 cv2.imwrite(img_name, frame[y: y + h, x: x + w])
                 print("{} written!".format(img_name))
                 img_counter += 1
+        return True
 
     def set_dev(self):
         self.dev = None
