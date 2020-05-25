@@ -9,7 +9,9 @@ class Controller(LocalController):
     def __init__(self, current_user, **kwargs):
         # TODO implement Agent database controller
         cv2args = kwargs.pop("cv2")
+        s = kwargs.pop("schema", "car-share/Agent/schema.sql")
         super().__init__(**kwargs)
+        self.schema = s
         kwargs = cv2args
         self.face_dir = kwargs.get("faces")
         self.current_user = current_user
@@ -32,6 +34,9 @@ class Controller(LocalController):
         return self.face_dir + resultset[0][0]
 
     def gather_face(self, username):
+        if not self.engine:
+            from Agent.facial_recognition.facial_recognition import FaceDetectionEngine
+            self.engine = FaceDetectionEngine(self, encodings=kwargs.get("encodings"), dev=kwargs.get("device_id", 0))
         path = self.face_dir + f"/{username}/"
         if os.path.exists(path):
             if input("Data exists! Retake photos? [Y/N]").upper() == "Y":
