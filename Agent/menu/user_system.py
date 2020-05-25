@@ -109,7 +109,7 @@ class UserMenu(BaseMenu):
             print(response)
 
     def add_face(self):
-        self.controller.gather_face(self.current_login.user, self.current_login.password)
+        self.controller.gather_face(self.current_login.user)
 
     def quit(self):
         super().quit()
