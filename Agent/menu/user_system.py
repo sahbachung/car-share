@@ -72,10 +72,8 @@ class UserMenu(BaseMenu):
         if username:
             password = self.controller.hash_function(getpass())
         else:
-
             self.current_login = LoginMenu(self.controller)
             username, password = self.current_login.login()
-
         with Client(self.config) as client:
             response = client.login(user=username, password=password)
         if response:
@@ -87,7 +85,7 @@ class UserMenu(BaseMenu):
     def verify_user(self) -> bool:
         car_id = int(input("THIS VEHICLE'S ID: "))
         with Client(self.config) as client:
-            response = Request.USER_VERIFY.send(client, user=self.current_user, car_id=car_id)
+            response = Request.USER_VERIFY.send(client, user=self.controller.current_user, car_id=car_id)
         return bool(response)
 
     def unlock_car(self):
@@ -99,7 +97,7 @@ class UserMenu(BaseMenu):
     def return_car(self):
         car_id = int(input("THIS VEHICLE'S ID: "))
         with Client(self.config) as client:
-            response = Request.CAR_RETURN.send(client, user=self.current_user, car_id=car_id)
+            response = Request.CAR_RETURN.send(client, user=self.controller.current_user, car_id=car_id)
         if response:
             print("---CAR SUCCESSFULLY RETURNED---")
             self.quit()
