@@ -62,7 +62,7 @@ class UserMenu(BaseMenu):
         self.base_menu += "\n\t1: Unlock Car\n\t2: Return car"
         self.config = server_config
 
-    def login(self, username=None, password=None, force=False):
+    def login(self, username=None, password=None, force=False) -> str:
         if username:
             password = self.controller.hash_function(getpass())
         else:
@@ -70,11 +70,12 @@ class UserMenu(BaseMenu):
         with Client(self.config) as client:
             response = client.login(user=username, password=password)
         if response:
-            self.controller.current_user = username
             if not self.local_user(username):
                 self.commands.append(lambda: self.add_face(username, password))
         else:
             print("Incorrect username or password")
+            return ""
+        return username
 
     def in_login(self) -> tuple:
         username = ""
