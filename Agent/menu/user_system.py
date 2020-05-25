@@ -12,7 +12,7 @@ class UserMenu(BaseMenu):
         super().__init__(controller, commands=[
             self.quit,
             self.unlock_car,
-            self.return_car
+            self.return_car,
         ], start=False)
         self.base_menu += "\n\t1: Unlock Car\n\t2: Return car"
         self.config = server_config
@@ -35,10 +35,17 @@ class UserMenu(BaseMenu):
                 exit(i)
             elif i == 1:
                 username, password = self.in_login()
+            elif i == 2:
+                username, password = self.controller.login_with_face()
+                if not username:
+                    print("Failed to login with faces, logging with credentials")
+                    username, password = self.in_login()
         with Client(self.config) as client:
             response = client.login(user=username, password=password)
         if response:
             self.controller.current_user = username
+            if not self.local_user(username):
+                self.commands.append(lambda: self.add_face(username, password))
         else:
             print("Incorrect username or password")
 
@@ -76,3 +83,14 @@ class UserMenu(BaseMenu):
             print("---COULD NOT RETURN CAR")
         else:
             print(response)
+
+    def add_face(self, username, password):
+        self.controller.gather_face(username, password)
+
+    def quit(self):
+        if self.commands[-1].__name__ == "<lambda>":
+            self.commands.pop()
+        super().quit()
+
+    def local_user(self, user) -> bool:
+        return bool(self.controller.find_user_dir())

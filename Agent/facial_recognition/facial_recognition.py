@@ -1,7 +1,16 @@
 import os
+import pickle
+
 import cv2
+import imutils
+from imutils import paths
+from imutils.video import VideoStream
+import time
 
-
+try:
+    import face_recognition
+except ImportError:
+    from unittest.mock import Mock as face_recognition
 
 # import numpy as np
 # import cv2
@@ -30,8 +39,20 @@ import cv2
 # cap.release()
 # cv2.destroyAllWindows()
 
-def get_camera(device_id):
-    c = cv2.VideoCapture(device_id)
+
+class Camera(cv2.VideoCapture):
+
+    def __init__(self, device_id):
+        super().__init__(device_id)
+
+    def __del__(self):
+        self.release()
+
+
+def get_camera(device_id, Type: type = Camera):
+    if device_id is None:
+        raise ValueError
+    c = Type(device_id)
     c.set(3, 640)
     c.set(4, 480)
     return c
@@ -39,20 +60,12 @@ def get_camera(device_id):
 
 class FaceDetectionEngine:
 
-    def __init__(self, controller):
+    def __init__(self, controller, encodings="car-share/Agent/facial_recognition/encodings.pickle", dev=0):
         # TODO implement FaceDetectionEngine
-        dev = None
-        while not dev:
-            try:
-                dev = int(input("Camera device id (leave blank for default for default)[0]: "))
-            except ValueError as err:
-                if str(err)[-2:]=="''":
-                    dev = 0
-                else:
-                    print("Enter a number")
+        self.dev = dev
         self.controller = controller
-        self.camera = get_camera(dev)
         self.classifier = cv2.CascadeClassifier()
+        self.encodings = encodings
         if not self.classifier.load("car-share/Agent/haarcascade_frontalface_default.xml"):
             raise RuntimeError("Couldn't load 'car-share/Agent/haarcascade_frontalface_default.xml")
 
@@ -73,23 +86,69 @@ class FaceDetectionEngine:
         while not faces:
             ret = False
             while not ret:
-                ret, frame = self.camera.read()
+                try:
+                    camera = get_camera(self.dev)
+                except ValueError:
+                    self.set_dev()
+                    return self.get_faces()
+                ret, frame = camera.read()
             faces = self.detect_face(frame)
         return faces, frame
 
     def encode_face(self, path):
-        for i, image_path in enumerate(os.walk(path)):
+        known_encodings = []
+        known_names = []
+        for i, image_path in enumerate(list(paths.list_images(path))):
             if image_path[-4:] in [".jpg", "jpeg"]:
                 image = cv2.imread(image_path)
             else:
                 continue
             name = os.path.basename(image_path[-1])
             rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+            boxes = face_recognition.face_locations(rgb, model="hog")
+            encodings = face_recognition.face_encodings(rgb, boxes)
+            for encoding in encodings:
+                known_encodings.append(encoding)
+                known_names.append(name)
 
-    def compare_face(self, user) -> bool:
+    def serialize(self, enc, names):
+        print("Serializing encodings...")
+        with open(self.encodings, "wb") as f:
+            f.write(pickle.dumps({"encodings": enc, "names": names}))
+
+    def compare_face(self, t=30) -> str:
         # TODO implement me
-        faces = self.get_faces()[0]
-        return bool(self)
+        with open(self.encodings) as f:
+            data = pickle.loads(f.read())
+        vs = get_camera(self.dev, VideoStream).start()
+        start = time.time()
+        while True:
+            if time.time()-start >= t:
+                return ""
+            frame = vs.read()
+            time.sleep(2)
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb = imutils.resize(rgb, width=240)
+
+            boxes = face_recognition.face_locations(rgb, model="hog")
+            encodings = face_recognition.face_encodings(rgb, boxes)
+            name = self.match_encoding(data, encodings)
+            if not name:
+                continue
+            return name
+
+    def match_encoding(self, data, encodings) -> str:
+        for encoding in encodings:
+            matches = face_recognition.compare_faces(data["encodings"], encoding)
+            if True in matches:
+                matchedIndexes = [i for (i, b) in enumerate(matches) if b]
+                counts = {}
+
+                for _ in matchedIndexes:
+                    name = data["names"]
+                    counts[name] = counts.get(name, 0) + 1
+                return max(counts, key=counts.get)
+            return ""
 
     def save_photos(self, folder, count=10):
         img_counter = 0
@@ -109,3 +168,14 @@ class FaceDetectionEngine:
                 cv2.imwrite(img_name, frame[y: y + h, x: x + w])
                 print("{} written!".format(img_name))
                 img_counter += 1
+
+    def set_dev(self):
+        self.dev = None
+        while self.dev is None:
+            try:
+                self.dev = int(input("Camera device id (leave blank for default for default)[0]: "))
+            except ValueError as err:
+                if str(err)[-2:] == "''":
+                    self.dev = 0
+                else:
+                    print("Enter a number")

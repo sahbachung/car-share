@@ -24,7 +24,7 @@ import json
 import socket
 
 
-from base_type.packet import Request, EndOfPacketError, Response, InvalidPacket
+from base_type.packet import Request, Response, InvalidPacket
 
 
 def add_header(msg: bytes, h: int) -> bytes:

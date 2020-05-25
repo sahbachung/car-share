@@ -21,6 +21,9 @@
     "port": 3306,
     "user": "root",
     "database": "LOCAL",
-    "schema": "car-share/Agent/schema.sql"
+    "schema": "car-share/Agent/schema.sql",
+    "encodings": "car-share/Agent/facial_recognition/encodings.pickle",
+    "faces": "car-share/Agent/facial_recognition/faces/",
+    "device_id": 0
   }
 }
