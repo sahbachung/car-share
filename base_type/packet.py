@@ -22,7 +22,7 @@ class Response(Enum):
         msg = {
             "response": self.value,
             "from": socket.gethostname(),
-            "time": datetime.datetime.now().strftime(kwargs.get("date_format"))
+            "time": datetime.datetime.now().strftime(kwargs.get("date_format", "%A %d %B %Y(%H:%M:%S %f)"))
         }
         payload = json.dumps(msg).encode(encoding="utf-8")
         length = len(payload)
@@ -52,21 +52,21 @@ class Request(Enum):
         return Response(response["response"])
 
     def get_payload(self, config, **kwargs) -> bytes:
+        assert kwargs.get("user", None) is not None
         msg = {
             "request": self.value,
             "from": socket.gethostname(),
-            "time": datetime.datetime.now().strftime(config.get("date_format"))
+            "time": datetime.datetime.now().strftime(config.get("date_format", "%A %d %B %Y(%H:%M:%S %f)")),
+            "user": kwargs["user"]
         }
         header_length = config["packet_header_size"]
         if self is Request.USER_LOGIN:
             """Asks the server if the credentials are valid and if the user has booked the car"""
-            assert all((kwargs.get(kwarg) for kwarg in ["user", "password"]))
-            msg["user"] = kwargs.get("user")
+            assert kwargs.get("password", None) is not None
             msg["password"] = kwargs.get("password")
         elif self is Request.USER_VERIFY or self is Request.CAR_RETURN:
-            assert all((kwargs.get(kwarg) for kwarg in ["user", "car_id"]))
-            msg["user"] = kwargs.get("user")
-            msg["car_id"] = kwargs.get("car_id")
+            assert kwargs.get("car_id", None) is not None
+            msg["car_id"] = kwargs["car_id"]
         payload = json.dumps(msg).encode(encoding="utf-8")
         length = len(payload)
         header = f"{length:<{header_length}}"

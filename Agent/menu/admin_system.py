@@ -26,3 +26,10 @@ class AdminMenu(BaseMenu):
             return
         self.controller.init_database(schema_loc=self.controller._config["schema"])
 
+    def start(self):
+        if not self.controller.current_user:
+            print("ERROR: NOT LOGGED IN")
+            self.login()
+            self.start()
+        super().start()
+
