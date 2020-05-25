@@ -58,6 +58,7 @@ class Controller(LocalController):
             from Agent.facial_recognition.facial_recognition import FaceDetectionEngine
             self.engine = FaceDetectionEngine(self, encodings=self._engine_args[0], dev=self._engine_args[1])
         path = self.face_dir + f"/{username}/"
+        print(path)
         if os.path.exists(path):
             if input("Data exists! Retake photos? [Y/N]").upper() == "Y":
                 rmtree(path)

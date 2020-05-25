@@ -65,7 +65,8 @@ class Client:
 
     def return_car(self, user, car_id):
         print(f"Requesting to return car: {car_id}")
-        response = Request.CAR_RETURN.send(self, )
+        response = Request.CAR_RETURN.send(self, username=user, car_id=car_id)
+        return response
 
     def get_payload(self, msg: dict) -> bytes:
         payload = bytes(json.dumps(msg), encoding="utf-8")

@@ -30,6 +30,8 @@ class LoginMenu:
                 i = int(input(f"Enter option: "))
             except ValueError:
                 continue
+            except KeyboardInterrupt:
+                commands[0]()
         return commands[i]()
 
     def login_with_creds(self) -> (str, str):
