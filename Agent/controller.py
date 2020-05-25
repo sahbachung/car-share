@@ -56,7 +56,7 @@ class Controller(LocalController):
     def gather_face(self, username):
         if not self.engine:
             from Agent.facial_recognition.facial_recognition import FaceDetectionEngine
-            self.engine = FaceDetectionEngine(self, encodings=kwargs.get("encodings"), dev=kwargs.get("device_id", 0))
+            self.engine = FaceDetectionEngine(self, encodings=self._engine_args[0], dev=self._engine_args[1])
         path = self.face_dir + f"/{username}/"
         if os.path.exists(path):
             if input("Data exists! Retake photos? [Y/N]").upper() == "Y":
