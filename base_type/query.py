@@ -7,10 +7,3 @@ class BaseQuery(ABC):
     @abstractmethod
     def load_commands(fp) -> list: ...
 
-    @staticmethod
-    @abstractmethod
-    def update_lastlogin(user) -> str: ...
-
-    @staticmethod
-    @abstractmethod
-    def finish_booking(event_id) -> str: ...

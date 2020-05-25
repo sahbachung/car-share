@@ -2,6 +2,24 @@ import os.path
 from shutil import rmtree
 
 from base_type.controller import LocalController
+from base_type.query import BaseQuery
+
+class Builder(BaseQuery):
+
+    @staticmethod
+    def load_commands(fp) -> list:
+        with open(fp, "r") as file:
+            commands = []
+            current = file.readline().strip()
+            while current:
+                while current[-1] != ";":
+                    _ = current
+                    current += file.readline().strip()
+                    if _ == current:
+                        break
+                commands.append(current)
+                current = file.readline().strip()
+            return commands
 
 
 class Controller(LocalController):
@@ -15,6 +33,7 @@ class Controller(LocalController):
         kwargs = cv2args
         self.face_dir = kwargs.get("faces")
         self.current_user = current_user
+        self._engine_args = (kwargs["encodings"], kwargs["device_id"])
         if os.path.exists(kwargs["encodings"]):
             try:
                 from Agent.facial_recognition import FaceDetectionEngine
@@ -22,6 +41,7 @@ class Controller(LocalController):
             except ImportError:
                 print("Face detect compatibility not detected")
                 self.engine = None
+
         else:
             self.engine = None
 
@@ -66,3 +86,7 @@ class Controller(LocalController):
 
     def get_current_user_password(self) -> str:
         self.cu.execute(f"SELECT password FROM user WHERE username LIKE '{self.current_user}'")
+
+    def wipe_database(self):
+        super().init_database(self.schema, db=self.db, qb=Builder)
+
