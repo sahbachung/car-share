@@ -7,10 +7,8 @@ from imutils import paths
 from imutils.video import VideoStream
 import time
 
-try:
-    import face_recognition
-except ImportError:
-    from unittest.mock import Mock as face_recognition
+import face_recognition
+
 
 # import numpy as np
 # import cv2
@@ -86,7 +84,9 @@ class FaceDetectionEngine:
         faces = []
         frame = None
         while not faces:
+            time.sleep(2)
             ret = False
+            if not ret: print("!ret")
             while not ret:
                 try:
                     camera = get_camera(self.dev)
@@ -95,6 +95,8 @@ class FaceDetectionEngine:
                     return self.get_faces()
                 ret, frame = camera.read()
             faces = self.detect_face(frame)
+            if not faces:
+                print("No faces detected")
         return faces, frame
 
     def encode_face(self, path):
@@ -170,7 +172,11 @@ class FaceDetectionEngine:
                 cv2.imwrite(img_name, frame[y: y + h, x: x + w])
                 print("{} written!".format(img_name))
                 img_counter += 1
-        return True
+        try:
+            self.encode_face(folder)
+            return True
+        except:
+            return False
 
     def set_dev(self):
         self.dev = None
