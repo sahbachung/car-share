@@ -82,4 +82,4 @@ INSERT INTO car(registration, make_id, model_id, colour, seats, location_id) VAL
 INSERT INTO booking(event_id, user_id, car_id, booked, duration, returned)
 VALUES (1, (SELECT id from user WHERE username LIKE 'customerA'), 1, CURRENT_TIMESTAMP, 10, CURRENT_TIMESTAMP);
 INSERT INTO booking(user_id, car_id, booked, duration)
-VALUES ((SELECT id from user WHERE username LIKE 'customerA'), 1, CURRENT_TIMESTAMP, 10);
+VALUES ((SELECT id from user WHERE username LIKE 'customerA'), 2, CURRENT_TIMESTAMP, 10);
