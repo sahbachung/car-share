@@ -12,7 +12,7 @@ class AdminMenu(BaseMenu):
         super().__init__(controller, start=False, commands=commands)
         self.config = server_config
 
-    def login(self, username=None, password=None):
+    def login(self, username=None, password=None) -> str:
         if not username:
             username = input("Username: ")
         if not password:
@@ -20,6 +20,10 @@ class AdminMenu(BaseMenu):
         with Client(self.config) as client:
             response = client.login(username, password)
             print(response)
+        if response:
+            return username
+        else:
+            return ""
 
     def reinit(self):
         if input(self.warning).upper() != "Y":
