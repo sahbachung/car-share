@@ -8,7 +8,9 @@ class Controller(LocalController):
 
     def __init__(self, current_user, **kwargs):
         # TODO implement Agent database controller
+        cv2args = kwargs.pop("cv2")
         super().__init__(**kwargs)
+        kwargs = cv2args
         self.face_dir = kwargs.get("faces")
         self.current_user = current_user
         try:
